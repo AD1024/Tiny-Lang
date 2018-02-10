@@ -1,0 +1,7 @@
+n := 5;
+ans := 0;
+for(;n>0;n:=n shr 1) do
+    if n & 1 = 1 then
+        ans := ans + 1
+    end
+end
