@@ -5,7 +5,7 @@ from functools import reduce
 
 arithmetic_exp_levels = [
     ['%', ],
-    ['*', '/'],
+    ['*', '/', 'div'],
     ['+', '-'],
     ['|', '&', '^'],
     ['shl', 'shr'],
@@ -154,7 +154,7 @@ def aexp_term():
 
 
 def aexp_tuple():
-    return (keyword('(') + Lazy(aexp) + keyword(')')) | func_call_stmt()
+    return ((keyword('(') + Lazy(aexp) + keyword(')')) ^ process_tuple) | func_call_stmt()
 
 
 def aexp_value():

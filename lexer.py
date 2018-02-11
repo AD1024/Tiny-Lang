@@ -75,7 +75,7 @@ def make_token(input_code):
 
 kw_list = [
     '+', '-', '*', '/', '%', '^', '|', '&', '~',
-    'shl',
+    'shl', 'div',
     'shr',
     'func', 'return', '=>',
     'while', 'do',
@@ -150,7 +150,7 @@ def advanced_parse(input_code):
 
     def read_word():
         ans = ''
-        while reader.has_next() and reader.from_cur().isalpha():
+        while reader.has_next() and reader.from_cur().isalpha() or reader.from_cur() in ('_', ):
             ans += reader.next()
         return ans
 
@@ -165,7 +165,7 @@ def advanced_parse(input_code):
             if cur in ('(', ')', '~', ';', '-'):
                 add_token(cur, ty_token.RESERVED)
             else:
-                while reader.has_next() and reader.from_cur() in kw_list:
+                while reader.has_next() and reader.from_cur() in kw_list and reader.from_cur() != '~':
                     cur += reader.next()
                 if cur == '<*':
                     add_token(cur, ty_token.BEGIN_COMMENT)

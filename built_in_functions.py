@@ -1,7 +1,7 @@
 from math import *
 from random import *
 
-func_list = dir() + ['println', 'print', 'scan']
+func_list = dir() + ['println', 'print', 'scan', 'int']
 
 
 def scan():

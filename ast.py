@@ -102,6 +102,7 @@ class BinopAexp(Aexp):
             '|': lambda: lv | rv,
             '&': lambda: lv & rv,
             '^': lambda: lv ^ rv,
+            'div': lambda: lv // rv,
             'shl': lambda: lv << rv,
             'shr': lambda: lv >> rv,
             '%': lambda: lv % rv,
@@ -307,11 +308,12 @@ class NegateStmt(Statement):
 
 
 class Func:
-    def __init__(self, name, param, body):
+    def __init__(self, name, param, body, caller=None):
         self.name = name
         self.param = param
         self.body = body
         self.func_id = id(self)
+        self.caller_id = caller
 
     def __repr__(self):
         return 'Function: {}({})'.format(self.name, self.param)
@@ -319,6 +321,8 @@ class Func:
     def eval(self, env, param_list=(), call_frame=None):
         env[self.func_id] = {}
         env[self.func_id][self.name] = self
+        if self.caller_id:
+            env[self.func_id].update({-1: env[self.caller_id]})
         if param_list:
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
                                                                                    or isinstance(x, Aexp)
@@ -345,6 +349,7 @@ class FuncCallStmt(Statement):
         func = None
         if call_frame:
             func = env[call_frame].get(self.func_name)
+            # func.caller_id = call_frame
         else:
             func = env.get(self.func_name)
         if self.func_name not in func_list and (not func or not isinstance(func, Func)):
@@ -353,7 +358,7 @@ class FuncCallStmt(Statement):
             exit(-1)
         else:
             if call_frame is not None and func is not None and self.func_name == func.name:
-                func = Func(self.func_name, func.param, func.body)
+                func = Func(self.func_name, func.param, func.body, caller=call_frame)
             if not self.param_list:
                 self.param_list = ()
             if self.func_name in func_list:
@@ -371,7 +376,10 @@ class FuncDeclareStmt(Statement):
         return 'Function-Declaration: {}{}'.format(self.name, self.param)
 
     def eval(self, env, call_frame=None):
-        env[self.name] = Func(self.name, self.param, self.body)
+        if call_frame:
+            env[call_frame][self.name] = Func(self.name, self.param, self.body)
+        else:
+            env[self.name] = Func(self.name, self.param, self.body)
 
 
 class ReturnExpression(Statement):

@@ -1,2 +1,14 @@
-ans := 1;for(i:=1;i<=10;i:=i+1) do ans := ans * i end;print(ans);func fib(x) =>if x = 1 orelse x = 2 then return x else return fib(x-1) + fib(x-2) end end;
-print(fib(10))
+func wrapper(fun, x, y) =>
+    func g() =>
+        return fun(x, y)
+    end;
+    return g
+end;
+func add(x, y) =>
+    return x + y
+end;
+func mul(x, y) =>
+    return x * y
+end;
+a := wrapper(add, 1, 11);
+print(a())
