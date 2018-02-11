@@ -1,3 +1,6 @@
+from built_in_functions import call_built_in, func_list
+
+
 class Equality:
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
@@ -315,10 +318,14 @@ class Func:
 
     def eval(self, env, param_list=(), call_frame=None):
         env[self.func_id] = {}
+        env[self.func_id][self.name] = self
         if param_list:
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
-                                                            or isinstance(x, Aexp)
-                                                            or isinstance(x, Bexp) else x, param_list))
+                                                                                   or isinstance(x, Aexp)
+                                                                                   or isinstance(x, Bexp) else x,
+                                   param_list))
+        if self.name in func_list:
+            return call_built_in(self.name, param_list)
         for i, j in zip(self.param, param_list):
             env[self.func_id][i] = j
         ans = self.body.eval(env, call_frame=self.func_id)
@@ -335,16 +342,22 @@ class FuncCallStmt(Statement):
         return 'Function Call for: {}({})'.format(self.func_name, self.param_list)
 
     def eval(self, env, call_frame=None):
-        func = env.get(self.func_name)
-        if not func or not isinstance(func, Func):
+        func = None
+        if call_frame:
+            func = env[call_frame].get(self.func_name)
+        else:
+            func = env.get(self.func_name)
+        if self.func_name not in func_list and (not func or not isinstance(func, Func)):
             import sys
             sys.stderr.write('function {} is not declared'.format(self.func_name))
             exit(-1)
         else:
-            if call_frame is not None:
-                func = Func(func.name, func.param, func.body)
+            if call_frame is not None and func is not None and self.func_name == func.name:
+                func = Func(self.func_name, func.param, func.body)
             if not self.param_list:
                 self.param_list = ()
+            if self.func_name in func_list:
+                func = Func(self.func_name, None, None)
             return func.eval(env, self.param_list, call_frame=call_frame)
 
 

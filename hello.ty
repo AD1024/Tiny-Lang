@@ -1,9 +1,5 @@
-z := 10;
-func f(x) =>
-    if x = 1 orelse x = 2 then
-        return x
-    else
-        return f(x-1)+f(x-2)
-    end
+func fib(x) =>
+    return sqrt(2) + atan(19)
 end;
-d := f(6)
+d := fib(6);
+print(d)

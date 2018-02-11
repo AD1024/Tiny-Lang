@@ -101,7 +101,6 @@ def func_call_stmt():
         (((name, _), param_list), _) = parsed
         if param_list:
             param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
-            print(param_list)
         return FuncCallStmt(name, param_list)
 
     return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(')') ^ processor
