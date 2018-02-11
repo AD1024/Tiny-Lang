@@ -1,4 +1,10 @@
-func f(x) =>
-    return x
+func add(a,b) =>
+    kk := a + b;
+    return kk
 end;
-d := f(10) + f(11)
+
+func g(k, x, y) =>
+    p := k(x, y);
+    return p
+end;
+l := g(add,1,11) + 10

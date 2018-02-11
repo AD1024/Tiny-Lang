@@ -235,7 +235,6 @@ class IfStmt(Statement):
         return 'IfStatement(if:{}, then:{}, else:{})'.format(self.cond, self.true_body, self.false_body)
 
     def eval(self, env):
-        print(self.cond)
         cond_value = self.cond.eval(env)
         if cond_value:
             return self.true_body.eval(env)
@@ -295,11 +294,17 @@ class Func:
         return 'Function: {}({})'.format(self.name, self.param)
 
     def eval(self, env, param_list=()):
+        if param_list:
+            param_list = tuple(map(lambda x: x.eval(env) if isinstance(x, Statement)
+                                                         or isinstance(x, Aexp)
+                                                         or isinstance(x, Bexp) else x, param_list))
+        print(param_list)
         for i, j in zip(self.param, param_list):
             env[i] = j
         ans = self.body.eval(env)
         for i in self.param:
-            env.pop(i)
+            if i in env:
+                env.pop(i)
         return ans
 
 
@@ -318,11 +323,7 @@ class FuncCallStmt(Statement):
             sys.stderr.write('function {} is not declared')
             exit(-1)
         else:
-            if self.param_list:
-                self.param_list = tuple(map(lambda x: x.eval(env) if isinstance(x, Statement)
-                                                                 or isinstance(x, Aexp)
-                                                                 or isinstance(x, Bexp) else x, self.param_list))
-            else:
+            if not self.param_list:
                 self.param_list = ()
             return func.eval(env, self.param_list)
 
