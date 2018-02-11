@@ -4,19 +4,7 @@ from random import *
 func_list = dir() + ['println', 'print', 'scan']
 
 
-def println(msg):
-    print_t(msg)
-    print()
-
-
-def print_t(msg):
-    for i in msg:
-        print(i, end=' ')
-
-
-def scan(msg=None):
-    if msg:
-        print_t(msg)
+def scan():
     return input()
 
 

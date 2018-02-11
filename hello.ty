@@ -1,5 +1,2 @@
-func fib(x) =>
-    return sqrt(2) + atan(19)
-end;
-d := fib(6);
-print(d)
+ans := 1;for(i:=1;i<=10;i:=i+1) do ans := ans * i end;print(ans);func fib(x) =>if x = 1 orelse x = 2 then return x else return fib(x-1) + fib(x-2) end end;
+print(fib(10))
