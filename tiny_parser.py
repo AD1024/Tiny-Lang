@@ -51,6 +51,7 @@ def if_stmt():
         else:
             false_stmt = None
         return IfStmt(condition, true_stmt, false_stmt)
+
     return keyword('if') + bexp() + keyword('then') \
            + Lazy(stmt_list) \
            + Opt(keyword('else') + Lazy(stmt_list)) + keyword('end') ^ processor
@@ -66,7 +67,6 @@ def while_stmt():
 
 def for_stmt():
     def processor(parsed):
-        print(parsed)
         ((((((((((_, _), init), _), cond), _), post_act), _), _,), body), _) = parsed
         return ForStmt(init, cond, body, post_act)
 
@@ -76,8 +76,28 @@ def for_stmt():
            + keyword(')') + keyword('do') + Lazy(stmt_list) + keyword('end') ^ processor
 
 
+def func_declaration_stmt():
+    def processor(parsed):
+        (((((((_, name), _), param), _), _), body), _) = parsed
+        param = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param)))
+        print(param)
+        return FuncDeclareStmt(name, param, body)
+
+    return keyword('func') + identifier + keyword('(') + Rep(identifier | keyword(',')) + keyword(')') + keyword('=>') \
+           + Lazy(stmt_list) + keyword('end') ^ processor
+
+
+def return_expression_stmt():
+    def processor(parsed):
+        (_, exp) = parsed
+        return ReturnExpression(exp)
+
+    return keyword('return') + (aexp()) ^ processor
+
+
 def stmt():
-    return assignment_stmt() | if_stmt() | while_stmt() | for_stmt()
+    return func_declaration_stmt() | assignment_stmt() | if_stmt() | while_stmt() | for_stmt() | \
+           return_expression_stmt()
 
 
 def stmt_list():

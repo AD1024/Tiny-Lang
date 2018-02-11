@@ -275,3 +275,60 @@ class ForStmt(Statement):
             if self.post:
                 self.post.eval(env)
             cond_value = self.cond.eval(env)
+
+
+class Func:
+    def __init__(self, name, param, body):
+        self.name = name
+        self.param = param
+        self.body = body
+
+    def __repr__(self):
+        return 'Function: {}({})'.format(self.name, self.param)
+
+    def eval(self, env, param_list=()):
+        for i, j in zip(self.param, param_list):
+            env[i] = j
+        return self.body.eval(env)
+
+
+class FuncCallStmt(Statement):
+    def __init__(self, func_name, param_list):
+        self.func_name = func_name
+        self.param_list = param_list
+
+    def __repr__(self):
+        return 'Function Call for: {}({})'.format(self.func_name, self.param_list)
+
+    def eval(self, env):
+        func = env.get(self.func_name)
+        if not func or not isinstance(func, Func):
+            import sys
+            sys.stderr.write('function {} is not declared')
+            exit(-1)
+        else:
+            return func.eval(env, self.param_list)
+
+
+class FuncDeclareStmt(Statement):
+    def __init__(self, name, param, body):
+        self.name = name
+        self.param = tuple(param)
+        self.body = body
+
+    def __repr__(self):
+        return 'Function-Declaration: {}{}'.format(self.name, self.param)
+
+    def eval(self, env):
+        env[self.name] = Func(self.name, self.param, self.body)
+
+
+class ReturnExpression(Statement):
+    def __init__(self, exp):
+        self.exp = exp
+
+    def __repr__(self):
+        return 'ReturnStatement {}'.format(self.exp)
+
+    def eval(self, env):
+        return self.exp.eval(env)

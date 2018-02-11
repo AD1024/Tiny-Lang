@@ -100,7 +100,7 @@ class Rep(Parser):
     def __init__(self, parser):
         self.parser = parser
 
-    def __cal__(self, tokens, pos):
+    def __call__(self, tokens, pos):
         results = []
         res = self.parser(tokens, pos)
         while res:
