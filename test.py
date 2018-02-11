@@ -8,7 +8,7 @@ if __name__ == '__main__':
     input_code = f.read()
     f.close()
     token_list = lexer.advanced_parse(input_code)
-    # print(token_list)
+    print(token_list)
     # t2 = lexer.make_token(input_code)
     # print(t2)
     # Process comment blocks

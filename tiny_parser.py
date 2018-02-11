@@ -112,7 +112,7 @@ def return_expression_stmt():
         (_, exp) = parsed
         return ReturnExpression(exp)
 
-    return keyword('return') + (func_call_stmt() | aexp()) ^ processor
+    return keyword('return') + (aexp()) ^ processor
 
 
 def stmt():

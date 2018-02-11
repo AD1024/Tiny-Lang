@@ -162,25 +162,17 @@ def advanced_parse(input_code):
             cur += read_number()
             add_token(cur, ty_token.DOUBLE if '.' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
-            if cur == '-' and reader.from_cur().isdigit() and ty_token \
-                    and (token_list[-1][1] is not ty_token.DOUBLE or token_list[-1][1] is not ty_token.INT):
-                cur += read_number()
-                add_token(cur, ty_token.DOUBLE if '.' in cur else ty_token.INT)
+            if cur in ('(', ')', '~', ';', '-'):
+                add_token(cur, ty_token.RESERVED)
             else:
-                # if cur in ('+', '-', '*', '/', '%', '^', '|', '&', '(', ')'):
-                #     add_token(cur, ty_token.RESERVED)
-                # else:
-                if cur in ('(', ')', '~'):
-                    add_token(cur, ty_token.RESERVED)
+                while reader.has_next() and reader.from_cur() in kw_list:
+                    cur += reader.next()
+                if cur == '<*':
+                    add_token(cur, ty_token.BEGIN_COMMENT)
+                elif cur == '*>':
+                    add_token(cur, ty_token.END_COMMENT)
                 else:
-                    while reader.has_next() and reader.from_cur() in kw_list:
-                        cur += reader.next()
-                    if cur == '<*':
-                        add_token(cur, ty_token.BEGIN_COMMENT)
-                    elif cur == '*>':
-                        add_token(cur, ty_token.END_COMMENT)
-                    else:
-                        add_token(cur, ty_token.RESERVED)
+                    add_token(cur, ty_token.RESERVED)
         elif cur.isalpha():
             cur += read_word()
             if cur in kw_list:

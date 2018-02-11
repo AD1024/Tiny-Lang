@@ -1,8 +1,9 @@
-func f(x) =>
-    if x < 0 then
-        return x + 1
-    end;
-    return x - 1
-end;
 z := 10;
-d := f(~z)
+func f(x) =>
+    if x = 1 orelse x = 2 then
+        return x
+    else
+        return f(x-1)+f(x-2)
+    end
+end;
+d := f(6)

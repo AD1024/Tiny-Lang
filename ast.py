@@ -28,7 +28,7 @@ class NumAexp(Aexp):
     def __repr__(self):
         return 'NumAexp({})'.format(self.v)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         return self.v
 
 
@@ -41,7 +41,7 @@ class StrAexp(Aexp):
     def __repr__(self):
         return 'StrAexp({})'.format(self.v)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         return self.v
 
 
@@ -54,7 +54,7 @@ class BoolAexp(Aexp):
     def __repr__(self):
         return 'BoolAexp({})'.format(self.v)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         return self.v
 
 
@@ -67,9 +67,13 @@ class VarAexp(Aexp):
     def __repr__(self):
         return 'VarAexp({})'.format(self.name)
 
-    def eval(self, env):
-        if self.name in env:
-            return env[self.name]
+    def eval(self, env, call_frame=None):
+        if not call_frame:
+            if self.name in env:
+                return env[self.name]
+        else:
+            if self.name in env[call_frame]:
+                return env[call_frame][self.name]
         return 0
 
 
@@ -84,9 +88,9 @@ class BinopAexp(Aexp):
     def __repr__(self):
         return 'BinopAexp({},{},{})'.format(self.left, self.op, self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         ret_dict = {
             '+': lambda: lv + rv,
             '-': lambda: lv - rv,
@@ -116,9 +120,9 @@ class RelopBexp(Aexp):
     def __repr__(self):
         return 'RelopAexp({},{},{})'.format(self.left, self.op, self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         ret_dict = {
             '>': lambda: lv > rv,
             '<': lambda: lv < rv,
@@ -143,9 +147,9 @@ class AndBexp(Bexp):
     def __repr__(self):
         return 'AndBexp({},{},{})'.format(self.left, '&&', self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         return lv and rv
 
 
@@ -159,9 +163,9 @@ class OrBexp(Bexp):
     def __repr__(self):
         return 'OrBexp({},{},{})'.format(self.left, '|', self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         return lv or rv
 
 
@@ -175,9 +179,9 @@ class XorBexp(Bexp):
     def __repr__(self):
         return 'XorBexp({},{},{})'.format(self.left, '|', self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         return lv ^ rv
 
 
@@ -190,8 +194,8 @@ class NotBexp(Bexp):
     def __repr__(self):
         return 'NotBexp({})'.format(self.exp)
 
-    def eval(self, env):
-        value = self.exp.eval(env)
+    def eval(self, env, call_frame=None):
+        value = self.exp.eval(env, call_frame=call_frame)
         return not value
 
 
@@ -203,9 +207,12 @@ class AssigenmentStmt(Statement):
     def __repr__(self):
         return 'AssignStatement({}, {})'.format(self.name, self.aexp)
 
-    def eval(self, env):
-        value = self.aexp.eval(env)
-        env[self.name] = value
+    def eval(self, env, call_frame=None):
+        value = self.aexp.eval(env, call_frame=call_frame)
+        if call_frame:
+            env[call_frame][self.name] = value
+        else:
+            env[self.name] = value
 
 
 class CompoundStmt(Statement):
@@ -216,9 +223,9 @@ class CompoundStmt(Statement):
     def __repr__(self):
         return 'CompoundStatement({},{})'.format(self.left, self.right)
 
-    def eval(self, env):
-        lv = self.left.eval(env)
-        rv = self.right.eval(env)
+    def eval(self, env, call_frame=None):
+        lv = self.left.eval(env, call_frame=call_frame)
+        rv = self.right.eval(env, call_frame=call_frame)
         if lv:
             return lv
         elif rv:
@@ -234,13 +241,13 @@ class IfStmt(Statement):
     def __repr__(self):
         return 'IfStatement(if:{}, then:{}, else:{})'.format(self.cond, self.true_body, self.false_body)
 
-    def eval(self, env):
-        cond_value = self.cond.eval(env)
+    def eval(self, env, call_frame=None):
+        cond_value = self.cond.eval(env, call_frame=call_frame)
         if cond_value:
-            return self.true_body.eval(env)
+            return self.true_body.eval(env, call_frame=call_frame)
         else:
             if self.false_body:
-                return self.false_body.eval(env)
+                return self.false_body.eval(env, call_frame=call_frame)
 
 
 class WhileStmt(Statement):
@@ -251,13 +258,13 @@ class WhileStmt(Statement):
     def __repr__(self):
         return 'WhileStatement(cond:{}, body:{})'.format(self.cond, self.body)
 
-    def eval(self, env):
-        cond_value = self.cond.eval(env)
+    def eval(self, env, call_frame=None):
+        cond_value = self.cond.eval(env, call_frame=call_frame)
         while cond_value:
-            res = self.body.eval(env)
+            res = self.body.eval(env, call_frame=call_frame)
             if res:
                 return res
-            cond_value = self.cond.eval(env)
+            cond_value = self.cond.eval(env, call_frame=call_frame)
 
 
 class ForStmt(Statement):
@@ -271,17 +278,17 @@ class ForStmt(Statement):
         return 'ForStatement(inital:{}, cond:{}, body:{}, post_act:{})' \
             .format(self.init, self.cond, self.body, self.post)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         if self.init:
-            self.init.eval(env)
-        cond_value = self.cond.eval(env)
+            self.init.eval(env, call_frame=call_frame)
+        cond_value = self.cond.eval(env, call_frame=call_frame)
         while cond_value:
-            res = self.body.eval(env)
+            res = self.body.eval(env, call_frame=call_frame)
             if res:
                 return res
             if self.post:
-                self.post.eval(env)
-            cond_value = self.cond.eval(env)
+                self.post.eval(env, call_frame=call_frame)
+            cond_value = self.cond.eval(env, call_frame=call_frame)
 
 
 class NegateStmt(Statement):
@@ -291,8 +298,8 @@ class NegateStmt(Statement):
     def __repr__(self):
         return 'Negation {}'.format(self.tar)
 
-    def eval(self, env):
-        var = self.tar.eval(env)
+    def eval(self, env, call_frame=None):
+        var = self.tar.eval(env, call_frame=call_frame)
         return -var
 
 
@@ -301,22 +308,21 @@ class Func:
         self.name = name
         self.param = param
         self.body = body
+        self.func_id = id(self)
 
     def __repr__(self):
         return 'Function: {}({})'.format(self.name, self.param)
 
-    def eval(self, env, param_list=()):
+    def eval(self, env, param_list=(), call_frame=None):
+        env[self.func_id] = {}
         if param_list:
-            param_list = tuple(map(lambda x: x.eval(env) if isinstance(x, Statement)
+            param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
                                                             or isinstance(x, Aexp)
                                                             or isinstance(x, Bexp) else x, param_list))
         for i, j in zip(self.param, param_list):
-            env[i] = j
-        print(env['x'])
-        ans = self.body.eval(env)
-        for i in self.param:
-            if i in env:
-                env.pop(i)
+            env[self.func_id][i] = j
+        ans = self.body.eval(env, call_frame=self.func_id)
+        env.pop(self.func_id)
         return ans
 
 
@@ -328,16 +334,18 @@ class FuncCallStmt(Statement):
     def __repr__(self):
         return 'Function Call for: {}({})'.format(self.func_name, self.param_list)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         func = env.get(self.func_name)
         if not func or not isinstance(func, Func):
             import sys
-            sys.stderr.write('function {} is not declared')
+            sys.stderr.write('function {} is not declared'.format(self.func_name))
             exit(-1)
         else:
+            if call_frame is not None:
+                func = Func(func.name, func.param, func.body)
             if not self.param_list:
                 self.param_list = ()
-            return func.eval(env, self.param_list)
+            return func.eval(env, self.param_list, call_frame=call_frame)
 
 
 class FuncDeclareStmt(Statement):
@@ -349,7 +357,7 @@ class FuncDeclareStmt(Statement):
     def __repr__(self):
         return 'Function-Declaration: {}{}'.format(self.name, self.param)
 
-    def eval(self, env):
+    def eval(self, env, call_frame=None):
         env[self.name] = Func(self.name, self.param, self.body)
 
 
@@ -360,5 +368,5 @@ class ReturnExpression(Statement):
     def __repr__(self):
         return 'ReturnStatement {}'.format(self.exp)
 
-    def eval(self, env):
-        return self.exp.eval(env)
+    def eval(self, env, call_frame=None):
+        return self.exp.eval(env, call_frame=call_frame)
