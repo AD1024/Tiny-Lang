@@ -1,5 +1,4 @@
-func x(a,b,c) =>
-    a := a + b + c;
-    return a
+func f(x) =>
+    return x
 end;
-d := x(1,2,3)
+d := f(10) + f(11)

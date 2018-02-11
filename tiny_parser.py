@@ -40,7 +40,7 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return (identifier + keyword(':=') + (func_call_stmt() | aexp())) ^ process
+    return (identifier + keyword(':=') + (aexp())) ^ process
 
 
 def if_stmt():
@@ -79,21 +79,22 @@ def for_stmt():
 def func_declaration_stmt():
     def processor(parsed):
         (((((((_, name), _), param), _), _), body), _) = parsed
-        param = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param)))
-        print(param)
+        if param:
+            param = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param)))
         return FuncDeclareStmt(name, param, body)
 
-    return keyword('func') + identifier + keyword('(') + Rep(identifier | keyword(',')) + keyword(')') + keyword('=>') \
+    return keyword('func') + identifier + keyword('(') + Opt(Rep(identifier | keyword(','))) + keyword(')') + keyword('=>') \
            + Lazy(stmt_list) + keyword('end') ^ processor
 
 
 def func_call_stmt():
     def processor(parsed):
         (((name, _), param_list), _) = parsed
-        param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
+        if param_list:
+            param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
         return FuncCallStmt(name, param_list)
 
-    return identifier + keyword('(') + Rep(aexp() | keyword(',')) + keyword(')') ^ processor
+    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | keyword(','))) + keyword(')') ^ processor
 
 
 def return_expression_stmt():
@@ -101,12 +102,12 @@ def return_expression_stmt():
         (_, exp) = parsed
         return ReturnExpression(exp)
 
-    return keyword('return') + (aexp()) ^ processor
+    return keyword('return') + (func_call_stmt() | aexp()) ^ processor
 
 
 def stmt():
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt()
+           return_expression_stmt() | aexp()
 
 
 def stmt_list():
@@ -144,7 +145,7 @@ def aexp_term():
 
 
 def aexp_tuple():
-    return keyword('(') + Lazy(aexp) + keyword(')')
+    return (keyword('(') + Lazy(aexp) + keyword(')')) | func_call_stmt()
 
 
 def aexp_value():

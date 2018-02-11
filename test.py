@@ -46,7 +46,6 @@ if __name__ == '__main__':
     print(token_list)
     ast = ty_parse(token_list)
     ast = ast.value
-    print(ast)
     env = {}
     ast.eval(env)
     for i, j in env.items():

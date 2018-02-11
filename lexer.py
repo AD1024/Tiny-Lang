@@ -4,6 +4,9 @@ import ty_token
 token_rule = [
     (r'[ \r\n\t]+', None),
     (r'#[^\n]*',   None),
+    (r'"[\u4e00-\u9fa5_a-zA-Z0-9]+"', ty_token.STRING),
+    (r'[-]*[0-9]+\.[0-9]+', ty_token.DOUBLE),
+    (r'[-]*[0-9]+', ty_token.INT),
     (r'<\*',  ty_token.BEGIN_COMMENT),
     (r'\*>',  ty_token.END_COMMENT),
     (r'func', ty_token.RESERVED),
@@ -39,9 +42,6 @@ token_rule = [
     (r'while',   ty_token.RESERVED),
     (r'do',      ty_token.RESERVED),
     (r'end',     ty_token.RESERVED),
-    (r'[0-9]+\.[0-9]+', ty_token.DOUBLE),
-    (r'"[\u4e00-\u9fa5_a-zA-Z0-9]+"', ty_token.STRING),
-    (r'[0-9]+', ty_token.INT),
     (r'(True|False)', ty_token.BOOL),
     (r'[A-Za-z][A-Za-z0-9_]*', ty_token.IDENTIFIER),
 

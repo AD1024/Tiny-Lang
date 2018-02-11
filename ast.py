@@ -297,7 +297,10 @@ class Func:
     def eval(self, env, param_list=()):
         for i, j in zip(self.param, param_list):
             env[i] = j
-        return self.body.eval(env)
+        ans = self.body.eval(env)
+        for i in self.param:
+            env.pop(i)
+        return ans
 
 
 class FuncCallStmt(Statement):
@@ -315,7 +318,12 @@ class FuncCallStmt(Statement):
             sys.stderr.write('function {} is not declared')
             exit(-1)
         else:
-            self.param_list = tuple(map(lambda x: x.eval(env), self.param_list))
+            if self.param_list:
+                self.param_list = tuple(map(lambda x: x.eval(env) if isinstance(x, Statement)
+                                                                 or isinstance(x, Aexp)
+                                                                 or isinstance(x, Bexp) else x, self.param_list))
+            else:
+                self.param_list = ()
             return func.eval(env, self.param_list)
 
 
