@@ -284,6 +284,18 @@ class ForStmt(Statement):
             cond_value = self.cond.eval(env)
 
 
+class NegateStmt(Statement):
+    def __init__(self, target):
+        self.tar = target
+
+    def __repr__(self):
+        return 'Negation {}'.format(self.tar)
+
+    def eval(self, env):
+        var = self.tar.eval(env)
+        return -var
+
+
 class Func:
     def __init__(self, name, param, body):
         self.name = name
@@ -296,11 +308,11 @@ class Func:
     def eval(self, env, param_list=()):
         if param_list:
             param_list = tuple(map(lambda x: x.eval(env) if isinstance(x, Statement)
-                                                         or isinstance(x, Aexp)
-                                                         or isinstance(x, Bexp) else x, param_list))
-        print(param_list)
+                                                            or isinstance(x, Aexp)
+                                                            or isinstance(x, Bexp) else x, param_list))
         for i, j in zip(self.param, param_list):
             env[i] = j
+        print(env['x'])
         ans = self.body.eval(env)
         for i in self.param:
             if i in env:

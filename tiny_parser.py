@@ -40,7 +40,7 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return (identifier + keyword(':=') + (aexp())) ^ process
+    return (identifier + keyword(':=') + (aexp() | negate_stmt())) ^ process
 
 
 def if_stmt():
@@ -76,6 +76,14 @@ def for_stmt():
            + keyword(')') + keyword('do') + Lazy(stmt_list) + keyword('end') ^ processor
 
 
+def negate_stmt():
+    def processor(parsed):
+        (_, target) = parsed
+        return NegateStmt(target)
+
+    return keyword('~') + Lazy(aexp) ^ processor
+
+
 def func_declaration_stmt():
     def processor(parsed):
         (((((((_, name), _), param), _), _), body), _) = parsed
@@ -83,7 +91,8 @@ def func_declaration_stmt():
             param = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param)))
         return FuncDeclareStmt(name, param, body)
 
-    return keyword('func') + identifier + keyword('(') + Opt(Rep(identifier | keyword(','))) + keyword(')') + keyword('=>') \
+    return keyword('func') + identifier + keyword('(') + Opt(Rep(identifier | keyword(','))) + keyword(')') + keyword(
+        '=>') \
            + Lazy(stmt_list) + keyword('end') ^ processor
 
 
@@ -92,9 +101,10 @@ def func_call_stmt():
         (((name, _), param_list), _) = parsed
         if param_list:
             param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
+            print(param_list)
         return FuncCallStmt(name, param_list)
 
-    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | keyword(','))) + keyword(')') ^ processor
+    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(')') ^ processor
 
 
 def return_expression_stmt():
@@ -107,7 +117,7 @@ def return_expression_stmt():
 
 def stmt():
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt() | aexp()
+           return_expression_stmt() | aexp() | negate_stmt()
 
 
 def stmt_list():

@@ -7,8 +7,10 @@ if __name__ == '__main__':
     f = open('hello.ty', 'r')
     input_code = f.read()
     f.close()
-    token_list = lexer.make_token(input_code)
-
+    token_list = lexer.advanced_parse(input_code)
+    # print(token_list)
+    # t2 = lexer.make_token(input_code)
+    # print(t2)
     # Process comment blocks
     stk = []
     comment_seg = []
@@ -43,7 +45,6 @@ if __name__ == '__main__':
                 apply_comment.append(cur)
         for i in apply_comment:
             token_list = list(filter(lambda x: x[-1] not in range(i[0], i[1]+1), token_list))
-    print(token_list)
     ast = ty_parse(token_list)
     ast = ast.value
     env = {}

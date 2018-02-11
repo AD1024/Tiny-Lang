@@ -1,10 +1,8 @@
-func add(a,b) =>
-    kk := a + b;
-    return kk
+func f(x) =>
+    if x < 0 then
+        return x + 1
+    end;
+    return x - 1
 end;
-
-func g(k, x, y) =>
-    p := k(x, y);
-    return p
-end;
-l := g(add,1,11) + 10
+z := 10;
+d := f(~z)
