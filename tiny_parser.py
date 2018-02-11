@@ -40,7 +40,7 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return identifier + keyword(':=') + aexp() ^ process
+    return (identifier + keyword(':=') + (func_call_stmt() | aexp())) ^ process
 
 
 def if_stmt():
@@ -87,6 +87,15 @@ def func_declaration_stmt():
            + Lazy(stmt_list) + keyword('end') ^ processor
 
 
+def func_call_stmt():
+    def processor(parsed):
+        (((name, _), param_list), _) = parsed
+        param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
+        return FuncCallStmt(name, param_list)
+
+    return identifier + keyword('(') + Rep(aexp() | keyword(',')) + keyword(')') ^ processor
+
+
 def return_expression_stmt():
     def processor(parsed):
         (_, exp) = parsed
@@ -96,7 +105,7 @@ def return_expression_stmt():
 
 
 def stmt():
-    return func_declaration_stmt() | assignment_stmt() | if_stmt() | while_stmt() | for_stmt() | \
+    return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
            return_expression_stmt()
 
 

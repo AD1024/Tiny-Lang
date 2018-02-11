@@ -39,7 +39,7 @@ token_rule = [
     (r'while',   ty_token.RESERVED),
     (r'do',      ty_token.RESERVED),
     (r'end',     ty_token.RESERVED),
-    (r'[0-9]+.[0-9]+', ty_token.DOUBLE),
+    (r'[0-9]+\.[0-9]+', ty_token.DOUBLE),
     (r'"[\u4e00-\u9fa5_a-zA-Z0-9]+"', ty_token.STRING),
     (r'[0-9]+', ty_token.INT),
     (r'(True|False)', ty_token.BOOL),

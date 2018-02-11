@@ -1,4 +1,5 @@
 func x(a,b,c) =>
-    a := b + c;
+    a := a + b + c;
     return a
-end
+end;
+d := x(1,2,3)

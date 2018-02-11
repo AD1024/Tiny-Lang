@@ -217,8 +217,12 @@ class CompoundStmt(Statement):
         return 'CompoundStatement({},{})'.format(self.left, self.right)
 
     def eval(self, env):
-        self.left.eval(env)
-        self.right.eval(env)
+        lv = self.left.eval(env)
+        rv = self.right.eval(env)
+        if lv:
+            return lv
+        elif rv:
+            return rv
 
 
 class IfStmt(Statement):
@@ -234,10 +238,10 @@ class IfStmt(Statement):
         print(self.cond)
         cond_value = self.cond.eval(env)
         if cond_value:
-            self.true_body.eval(env)
+            return self.true_body.eval(env)
         else:
             if self.false_body:
-                self.false_body.eval(env)
+                return self.false_body.eval(env)
 
 
 class WhileStmt(Statement):
@@ -251,7 +255,9 @@ class WhileStmt(Statement):
     def eval(self, env):
         cond_value = self.cond.eval(env)
         while cond_value:
-            self.body.eval(env)
+            res = self.body.eval(env)
+            if res:
+                return res
             cond_value = self.cond.eval(env)
 
 
@@ -271,7 +277,9 @@ class ForStmt(Statement):
             self.init.eval(env)
         cond_value = self.cond.eval(env)
         while cond_value:
-            self.body.eval(env)
+            res = self.body.eval(env)
+            if res:
+                return res
             if self.post:
                 self.post.eval(env)
             cond_value = self.cond.eval(env)
@@ -307,6 +315,7 @@ class FuncCallStmt(Statement):
             sys.stderr.write('function {} is not declared')
             exit(-1)
         else:
+            self.param_list = tuple(map(lambda x: x.eval(env), self.param_list))
             return func.eval(env, self.param_list)
 
 
