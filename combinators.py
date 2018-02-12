@@ -107,7 +107,7 @@ class Rep(Parser):
             results.append(res)
             pos = res.pos
             res = self.parser(tokens, pos)
-        return Result(results, pos)
+        return Result(results, pos) if results else None
 
 
 class Process(Parser):

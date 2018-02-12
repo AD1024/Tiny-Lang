@@ -1,6 +1,13 @@
 from built_in_functions import call_built_in, func_list
 
 
+def find_variable(env, call_frame, name):
+    t_tree = env.copy()
+    while name not in t_tree[call_frame] and -1 in t_tree[call_frame]:
+        t_tree[call_frame] = t_tree[call_frame][-1]
+    return t_tree[call_frame].get(name)
+
+
 class Equality:
     def __eq__(self, other):
         return isinstance(other, self.__class__) and \
@@ -19,6 +26,10 @@ class Bexp(Equality):
 
 
 class Statement(Equality):
+    pass
+
+
+class Subscriptable:
     pass
 
 
@@ -75,8 +86,9 @@ class VarAexp(Aexp):
             if self.name in env:
                 return env[self.name]
         else:
-            if self.name in env[call_frame]:
-                return env[call_frame][self.name]
+            return find_variable(env, call_frame, self.name)
+            # if self.name in env[call_frame]:
+            #     return env[call_frame][self.name]
         return 0
 
 
@@ -88,12 +100,15 @@ class SubscriptExp:
     def __repr__(self):
         return '{}{}'.format(self.obj, self.idx)
 
+    def get_target(self):
+        return self.obj, self.idx
+
     def eval(self, env, call_frame=None):
         if call_frame:
-            tar = env[call_frame][self.obj]
+            tar = find_variable(env, call_frame, self.obj)
         else:
             tar = env[self.obj]
-        if isinstance(tar, (Bexp, Aexp, SubscriptExp, Statement)):
+        if isinstance(tar, (Bexp, Aexp, SubscriptExp, Statement, VarAexp)):
             value = tar.eval(env, call_frame=call_frame)
         else:
             value = tar
@@ -236,7 +251,21 @@ class AssigenmentStmt(Statement):
 
     def eval(self, env, call_frame=None):
         value = self.aexp.eval(env, call_frame=call_frame)
-        if call_frame:
+        if isinstance(self.name, SubscriptExp):
+            obj, idx = self.name.get_target()
+            idx = list(map(lambda i: i.eval(env, call_frame=call_frame), idx))
+            if call_frame:
+                obj = find_variable(env, call_frame, obj)
+            else:
+                obj = env[obj]
+
+            def modify(xs, i):
+                if len(i) == 1:
+                    xs[i[0]] = value
+                else:
+                    return modify(xs[i[0]], i[1:])
+            modify(obj, idx)
+        elif call_frame:
             env[call_frame][self.name] = value
         else:
             env[self.name] = value
@@ -344,36 +373,52 @@ class Func:
     def eval(self, env, param_list=(), call_frame=None):
         env[self.func_id] = {}
         env[self.func_id][self.name] = self
-        if self.caller_id:
+        if not call_frame:
+            env[self.func_id].update({-1: dict(filter(lambda x: x[0] != self.func_id, env.items()))})
+        if self.caller_id and self.caller_id in env:
             env[self.func_id].update({-1: env[self.caller_id]})
         if param_list:
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
                                                                                    or isinstance(x, Aexp)
                                                                                    or isinstance(x, Bexp)
                                                                                    or isinstance(x, SubscriptExp)
-                                                                                   else x,
-                                                                                   param_list))
+            else x,
+                                   param_list))
         if self.name in func_list:
             return call_built_in(self.name, param_list)
         for i, j in zip(self.param, param_list):
             env[self.func_id][i] = j
         ans = self.body.eval(env, call_frame=self.func_id)
-        env.pop(self.func_id)
+        # env.pop(self.func_id)
         return ans
 
 
-class Array:
+class Array(Subscriptable):
     def __init__(self, size, init_value):
         self.size = size
+        self.init_value = init_value
+        self.data = []
         if init_value is None:
             init_value = 0
-        self.data = [init_value] * size
+        if isinstance(init_value, Array):
+            for i in range(0, size):
+                self.data.append(init_value.copy())
+        else:
+            self.data = [init_value] * size
 
     def __repr__(self):
         return 'Array of {}'.format(self.data)
 
     def __getitem__(self, item):
         return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def copy(self):
+        ret = Array(self.size, self.init_value)
+        ret.data = self.data.copy()
+        return ret
 
     def eval(self, env, call_frame=None):
         return self.data
@@ -390,8 +435,10 @@ class FuncCallStmt(Statement):
     def eval(self, env, call_frame=None):
         func = None
         if call_frame:
-            func = env[call_frame].get(self.func_name)
-            # func.caller_id = call_frame
+            # func = env[call_frame].get(self.func_name)
+            func = find_variable(env, call_frame, self.func_name)
+            if func:
+                func.caller_id = call_frame
         else:
             func = env.get(self.func_name)
         if self.func_name not in func_list and (not func or not isinstance(func, Func)):
@@ -411,7 +458,7 @@ class FuncCallStmt(Statement):
 class FuncDeclareStmt(Statement):
     def __init__(self, name, param, body):
         self.name = name
-        self.param = tuple(param)
+        self.param = tuple(param) if param else ()
         self.body = body
 
     def __repr__(self):

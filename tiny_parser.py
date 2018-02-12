@@ -40,7 +40,7 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return (identifier + keyword(':=') + (aexp() | negate_stmt() | array_init_stmt())) ^ process
+    return ((subscript_exp() | identifier) + keyword(':=') + (aexp() | negate_stmt() | array_init_stmt())) ^ process
 
 
 def if_stmt():
@@ -103,7 +103,8 @@ def func_call_stmt():
             param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
         return FuncCallStmt(name, param_list)
 
-    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
+    return identifier + keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
+                                               | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
         ')') ^ processor
 
 
@@ -124,7 +125,8 @@ def array_init_stmt():
             init_value = None
         return ArrayInitStmt(size, init_value)
 
-    return keyword('array') + keyword('(') + Lazy(aexp) + Opt(keyword(',') + Lazy(aexp)) + keyword(')') ^ processor
+    return keyword('array') + keyword('(') + Lazy(aexp) + Opt(keyword(',') + (Lazy(array_init_stmt) | Lazy(aexp))) \
+           + keyword(')') ^ processor
 
 
 def stmt():
@@ -184,6 +186,7 @@ def aexp_tuple():
 
 def aexp_value():
     return (num ^ (lambda x: NumAexp(x))) | \
+           negate_stmt() | \
            subscript_exp() | \
            (identifier ^ (lambda x: VarAexp(x))) | \
            (string ^ (lambda x: StrAexp(x))) | \

@@ -1,2 +1,27 @@
-a := array(10, 1);
-d := 3;
+N := int(scan());
+a := array(N);
+
+func lowbit(x) =>
+    return x & (~x)
+end;
+
+func update(x, v) =>
+    while x < N do
+        a[x] := a[x] + v;
+        x := x + lowbit(x)
+    end
+end;
+
+op := int(scan());
+for(i:=0;i<op;i:=i+1) do
+    p := int(scan());
+    q := int(scan());
+    update(p, q)
+end;
+ans := 0;
+p := int(scan());
+while p > 0 do
+    ans := ans + a[p];
+    p := p - lowbit(p)
+end;
+print(ans)
