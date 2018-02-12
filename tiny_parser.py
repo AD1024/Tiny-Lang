@@ -21,6 +21,7 @@ def keyword(kw):
     return Reserved(kw, RESERVED)
 
 
+'Atomic Parsers'
 num = (Tag(INT) ^ (lambda x: int(x))) | (Tag(DOUBLE) ^ (lambda x: float(x)))
 string = (Tag(STRING) ^ (lambda x: str(x)))
 boolean = (Tag(BOOL) ^ (lambda x: True if x == 'True' else False))
@@ -44,6 +45,7 @@ def assignment_stmt():
 
 
 def if_stmt():
+    'Match if-then-else statment'
     def processor(parsed):
         (((((_, condition), _), true_stmt), false_parsed), _) = parsed
         if false_parsed:
@@ -58,6 +60,7 @@ def if_stmt():
 
 
 def while_stmt():
+    'Match while-statement'
     def processor(parsed):
         ((((_, condition), _), body), _) = parsed
         return WhileStmt(condition, body)
@@ -66,6 +69,7 @@ def while_stmt():
 
 
 def for_stmt():
+    'Match for-statement'
     def processor(parsed):
         ((((((((((_, _), init), _), cond), _), post_act), _), _,), body), _) = parsed
         return ForStmt(init, cond, body, post_act)
@@ -77,6 +81,7 @@ def for_stmt():
 
 
 def negate_stmt():
+    'Match negating a number'
     def processor(parsed):
         (_, target) = parsed
         return NegateStmt(target)
@@ -85,6 +90,7 @@ def negate_stmt():
 
 
 def func_declaration_stmt():
+    'Match new function binding'
     def processor(parsed):
         (((((((_, name), _), param), _), _), body), _) = parsed
         if param:
@@ -97,6 +103,7 @@ def func_declaration_stmt():
 
 
 def func_call_stmt():
+    'Match function call'
     def processor(parsed):
         (((name, _), param_list), _) = parsed
         if param_list:
@@ -109,6 +116,7 @@ def func_call_stmt():
 
 
 def return_expression_stmt():
+    'Match returning a result'
     def processor(parsed):
         (_, exp) = parsed
         return ReturnExpression(exp)
@@ -117,6 +125,7 @@ def return_expression_stmt():
 
 
 def array_init_stmt():
+    'Match initializing an array'
     def processor(parsed):
         ((((_, _), size), opt_value), _) = parsed
         if opt_value:
@@ -130,11 +139,16 @@ def array_init_stmt():
 
 
 def stmt():
+    '''
+        Note that subscript_exp() should be called before aexp()
+        is called, since aexp() will match subset in subscript_exp()
+    '''
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
            return_expression_stmt() | subscript_exp() | aexp() | negate_stmt()
 
 
 def stmt_list():
+    # Take ; as separator to construct CompoundStatements
     sep = keyword(';') ^ (lambda x: lambda l, r: CompoundStmt(l, r))
     return Exp(stmt(), sep)
 
@@ -145,12 +159,15 @@ def process_tuple(parsed):
 
 
 def get_parser_from_list(lst):
+    'This function will return parsers by following a certain order'
     op_parsers = [keyword(x) for x in lst]
     combined_parser = reduce(lambda l, r: l | r, op_parsers)
     return combined_parser
 
 
 def precedence_combinator(value_parser, precedence_level, post_processor):
+    'Precedence combinator is designed for process arithmetic and bool calculations'
+    'whose result can be affected by the priority of operators'
     def get_op_parser(p_level):
         return get_parser_from_list(p_level) ^ post_processor
 
@@ -161,6 +178,7 @@ def precedence_combinator(value_parser, precedence_level, post_processor):
 
 
 def subscript_exp():
+    'Indexing expression'
     def processor(parsed):
         (name, subscript) = parsed
         idx_list = []
@@ -173,10 +191,12 @@ def subscript_exp():
 
 
 def aexp():
+    # Major Function
     return precedence_combinator(aexp_term(), arithmetic_exp_levels, process_binop)
 
 
 def aexp_term():
+    'Full set of arithmetic operation'
     return aexp_tuple() | aexp_value()
 
 
@@ -185,6 +205,7 @@ def aexp_tuple():
 
 
 def aexp_value():
+    'Note: subscript_exp should be called before identifier'
     return (num ^ (lambda x: NumAexp(x))) | \
            negate_stmt() | \
            subscript_exp() | \
@@ -194,6 +215,7 @@ def aexp_value():
 
 
 def bexp():
+    # Major function
     return precedence_combinator(bexp_term(), bool_exp_levels, process_logic_exp)
 
 

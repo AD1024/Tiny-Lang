@@ -2,6 +2,9 @@ from built_in_functions import call_built_in, func_list
 
 
 def find_variable(env, call_frame, name):
+    'When `call_frame` is not None, which means the context of current env is in'
+    'a function or several layers of function call. This method is designed for'
+    'finding variables in parent context, which is stored in the index -1'
     t_tree = env.copy()
     while name not in t_tree[call_frame] and -1 in t_tree[call_frame]:
         t_tree[call_frame] = t_tree[call_frame][-1]
@@ -18,22 +21,37 @@ class Equality:
 
 
 class Aexp(Equality):
+    '''
+    Arithmetic expression base class
+    '''
     pass
 
 
 class Bexp(Equality):
+    '''
+    Bool expression base class
+    '''
     pass
 
 
 class Statement(Equality):
+    '''
+    Statement base class
+    '''
     pass
 
 
 class Subscriptable:
+    '''
+    Subscriptable base class
+    '''
     pass
 
 
 class NumAexp(Aexp):
+    '''
+    Constants
+    '''
     __slots__ = ['v']
 
     def __init__(self, o):
@@ -73,6 +91,9 @@ class BoolAexp(Aexp):
 
 
 class VarAexp(Aexp):
+    '''
+    VarAexp stores a variable
+    '''
     __slots__ = ['name']
 
     def __init__(self, name):
@@ -93,6 +114,10 @@ class VarAexp(Aexp):
 
 
 class SubscriptExp:
+    '''
+    SubscriptExp process indexing an object
+    '''
+
     def __init__(self, obj, idx):
         self.obj = obj
         self.idx = idx
@@ -101,14 +126,18 @@ class SubscriptExp:
         return '{}{}'.format(self.obj, self.idx)
 
     def get_target(self):
+        'This function is used to facilitate indexing data assignment(a[0] := 1)'
         return self.obj, self.idx
 
     def eval(self, env, call_frame=None):
         if call_frame:
+            # Find the iterable object according to context
             tar = find_variable(env, call_frame, self.obj)
         else:
+            # Find the object from static environment
             tar = env[self.obj]
         if isinstance(tar, (Bexp, Aexp, SubscriptExp, Statement, VarAexp)):
+            # If it is not a object that can directly be indexed
             value = tar.eval(env, call_frame=call_frame)
         else:
             value = tar
@@ -119,6 +148,9 @@ class SubscriptExp:
 
 
 class BinopAexp(Aexp):
+    '''
+     Process Arithmetic operations
+    '''
     __slots__ = ['op', 'left', 'right']
 
     def __init__(self, op, left, right):
@@ -152,6 +184,9 @@ class BinopAexp(Aexp):
 
 
 class RelopBexp(Aexp):
+    '''
+    Process relation operator(returns bool)
+    '''
     __slots__ = ['op', 'left', 'right']
 
     def __init__(self, op, left, right):
@@ -260,10 +295,12 @@ class AssigenmentStmt(Statement):
                 obj = env[obj]
 
             def modify(xs, i):
+                'This method fetches the target object. It is used to deal with multi-indexing(a[0][1][2] = 3)'
                 if len(i) == 1:
                     xs[i[0]] = value
                 else:
                     return modify(xs[i[0]], i[1:])
+
             modify(obj, idx)
         elif call_frame:
             env[call_frame][self.name] = value
@@ -371,13 +408,17 @@ class Func:
         return 'Function: {}({})'.format(self.name, self.param)
 
     def eval(self, env, param_list=(), call_frame=None):
+        # Set up context
         env[self.func_id] = {}
-        env[self.func_id][self.name] = self
+        env[self.func_id][self.name] = self  # put itself into the context to prepare for recursive call
         if not call_frame:
+            # Put the static environment into its parent context
             env[self.func_id].update({-1: dict(filter(lambda x: x[0] != self.func_id, env.items()))})
         if self.caller_id and self.caller_id in env:
+            # If it is called by its parent method, update the parent context
             env[self.func_id].update({-1: env[self.caller_id]})
         if param_list:
+            # Process parameters
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
                                                                                    or isinstance(x, Aexp)
                                                                                    or isinstance(x, Bexp)
@@ -402,6 +443,7 @@ class Array(Subscriptable):
             init_value = 0
         if isinstance(init_value, Array):
             for i in range(0, size):
+                # To prevent referencing objects in an array
                 self.data.append(init_value.copy())
         else:
             self.data = [init_value] * size
@@ -436,6 +478,7 @@ class FuncCallStmt(Statement):
         func = None
         if call_frame:
             # func = env[call_frame].get(self.func_name)
+            'Find the function according to the context'
             func = find_variable(env, call_frame, self.func_name)
             if func:
                 func.caller_id = call_frame
@@ -447,10 +490,12 @@ class FuncCallStmt(Statement):
             exit(-1)
         else:
             if call_frame is not None and func is not None and self.func_name == func.name:
+                # If the func call is recursive, create a new function to create a new context
                 func = Func(self.func_name, func.param, func.body, caller=call_frame)
             if not self.param_list:
                 self.param_list = ()
             if self.func_name in func_list:
+                # built-in functions
                 func = Func(self.func_name, None, None)
             return func.eval(env, self.param_list, call_frame=call_frame)
 
@@ -467,6 +512,7 @@ class FuncDeclareStmt(Statement):
     def eval(self, env, call_frame=None):
         if call_frame:
             env[call_frame][self.name] = Func(self.name, self.param, self.body)
+            env[call_frame][self.name].caller_id = call_frame  # For closure
         else:
             env[self.name] = Func(self.name, self.param, self.body)
 

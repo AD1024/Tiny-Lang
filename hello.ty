@@ -1,3 +1,11 @@
+<*func f(x) =>
+    func g() =>
+        return x + 1
+    end;
+    return g
+end;
+a := f(2);
+print(a()) *>
 N := int(scan());
 a := array(N);
 

@@ -1,4 +1,8 @@
 class Result:
+    '''
+    This class stores the result parsed by parsers
+    and the position of the start point of remaining tokens
+    '''
     __slots__ = ['value', 'pos']
 
     def __init__(self, v, p):
@@ -10,6 +14,27 @@ class Result:
 
 
 class Parser:
+    '''
+    Parser base class:
+        `P_a` + `P_b`
+        means that the pattern that can be
+        parsed by `P_a` and `P_b` must be adjacent to each other
+
+        `P_a` | `P_b`
+        means that one of the patterns that can be parsed by `P_a` and `P_b` must occur
+        at the position
+
+        `P_a` * `P_b`
+        will take `P_a` as separator and return elements on two sides of the pattern that can be parsed
+        by `P_a` into a `CompoundStmt` wrapper. This class is used to deal with left recursion
+
+        `Lazy(p_func)`
+        is designed for lazy calculation, which is not natively supported by Python. The parser will
+        be generated when it is needed.
+
+        `P_a ^ func`
+        will return the result of `func`, which takes the parsed result proceeded by `P_a`
+    '''
     def __call__(self, value, pos):
         return None
 
@@ -27,6 +52,12 @@ class Parser:
 
 
 class Reserved(Parser):
+    '''
+    Reserved parser will match both `data`
+    and `tag` in a token. Usually it is used to
+    match Keywords that only have signal function rather
+    than actual effect on the program(For example, `for`, 'while', and 'if')
+    '''
     __slots__ = ['data', 'tag']
 
     def __init__(self, data, tag):
@@ -40,6 +71,9 @@ class Reserved(Parser):
 
 
 class Tag(Parser):
+    '''
+    Tag parser will only match tokens with certain `tag`
+    '''
     __slots__ = ['tag']
 
     def __init__(self, tag):
@@ -138,6 +172,10 @@ class Lazy(Parser):
 
 
 class Phrase(Parser):
+    '''
+    Phrase combinator will check
+    whether parsing is successful
+    '''
     __slots__ = ['parser']
 
     def __init__(self, parser):

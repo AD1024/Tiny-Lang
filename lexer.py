@@ -1,7 +1,7 @@
 import re
 import sys
 import ty_token
-
+# BEGIN deprecated lexer function
 token_rule = [
     (r'[ \r\n\t]+', None),
     (r'#[^\n]*', None),
@@ -71,8 +71,9 @@ def make_token(input_code):
         else:
             cur = match.end(0)
     return tokens
+# END deprecated lexer function
 
-
+# keyword list
 kw_list = [
     '+', '-', '*', '/', '%', '^', '|', '&', '~',
     'shl', 'div', ',',
@@ -83,10 +84,15 @@ kw_list = [
     '<*', '*>', '>', '<', '>=', '<=', '=', ':=', '!=', 'andalso', 'orelse',
     'True', 'False', ';', '(', ')', '[', ']',
 ]
+# escape symbols
 escape = ['\n', '\r', '\t', '\a', ' ', '\f']
 
 
 class Reader:
+    '''
+        This class stores iterable object and it can return elements in the object position by position.
+        This class is used to facilitate the tokenizer function below
+    '''
     def __init__(self, data):
         self.data = data
         self.size = len(data)
@@ -94,6 +100,11 @@ class Reader:
         self.cursor = 0
 
     def update(self, data):
+        '''
+        Update the data in the reader
+        :param data: iterable
+        :return: None
+        '''
         self.data = data
         self.size = len(data)
         self.rng = range(0, self.size)
@@ -102,9 +113,17 @@ class Reader:
         return 'LexerReader @ '.format(id(self))
 
     def has_next(self):
+        '''
+        Check whether any element remaining(has not been processed)
+        :return:
+        '''
         return self.cursor + 1 <= self.size
 
     def next(self):
+        '''
+        Return the data the cursor pointing and move the cursor to the next position
+        :return:
+        '''
         ans = self.data[self.cursor]
         self.cursor += 1
         return ans
@@ -116,11 +135,21 @@ class Reader:
         return self.from_cur(1)
 
     def from_cur(self, step=0):
+        '''
+        Get data `step` far from the cursor
+        :param step: int
+        :return: element in the iterable object
+        '''
         p_cur = self.cursor + step
         return self.data[p_cur] if p_cur in self.rng else None
 
 
 def advanced_parse(input_code):
+    '''
+    Tokenizer
+    :param input_code: string
+    :return: token list
+    '''
     token_list = []
     reader = Reader(input_code)
 
@@ -143,6 +172,7 @@ def advanced_parse(input_code):
         while reader.has_next() and reader.from_cur().isdigit():
             ans += reader.next()
         if reader.has_next() and reader.from_cur() == '.':
+            'Process decimal numbers'
             ans += reader.next()
             while reader.has_next() and reader.from_cur().isdigit():
                 ans += reader.next()
@@ -151,6 +181,7 @@ def advanced_parse(input_code):
     def read_word():
         ans = ''
         while reader.has_next() and reader.from_cur().isalpha() or reader.from_cur() in ('_', ):
+            'read a word'
             ans += reader.next()
         return ans
 
@@ -163,10 +194,13 @@ def advanced_parse(input_code):
             add_token(cur, ty_token.DOUBLE if '.' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
             if cur in ('(', ')', '~', ';', '-', '[', ']', ','):
+                'These are single-symbol reserved words. There cannot be any symbol related'
+                'to these symbols after them'
                 add_token(cur, ty_token.RESERVED)
             else:
                 while reader.has_next() and reader.from_cur() in kw_list and reader.from_cur() not \
                         in ('(', ')', '~', ';', '-', '[', ']', ','):
+                    'Process reserved words like `>=`, `<=`, which consist of two one-symbol reserved word'
                     cur += reader.next()
                 if cur == '<*':
                     add_token(cur, ty_token.BEGIN_COMMENT)
@@ -177,10 +211,12 @@ def advanced_parse(input_code):
         elif cur.isalpha():
             cur += read_word()
             if cur in kw_list:
+                '`cur` is a reserved word e.g. `for`'
                 if cur == 'True' or cur == 'False':
                     add_token(cur, ty_token.BOOL)
                 else:
                     add_token(cur, ty_token.RESERVED)
             else:
+                '`cur` is an identifier'
                 add_token(cur, ty_token.IDENTIFIER)
     return token_list
