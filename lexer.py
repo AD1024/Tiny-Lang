@@ -75,13 +75,13 @@ def make_token(input_code):
 
 kw_list = [
     '+', '-', '*', '/', '%', '^', '|', '&', '~',
-    'shl', 'div',
+    'shl', 'div', ',',
     'shr',
-    'func', 'return', '=>',
+    'func', 'return', '=>', 'array',
     'while', 'do',
     'for', 'if', 'then', 'else', 'end', 'not',
     '<*', '*>', '>', '<', '>=', '<=', '=', ':=', '!=', 'andalso', 'orelse',
-    'True', 'False', ';', '(', ')',
+    'True', 'False', ';', '(', ')', '[', ']',
 ]
 escape = ['\n', '\r', '\t', '\a', ' ', '\f']
 
@@ -162,10 +162,11 @@ def advanced_parse(input_code):
             cur += read_number()
             add_token(cur, ty_token.DOUBLE if '.' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
-            if cur in ('(', ')', '~', ';', '-'):
+            if cur in ('(', ')', '~', ';', '-', '[', ']', ','):
                 add_token(cur, ty_token.RESERVED)
             else:
-                while reader.has_next() and reader.from_cur() in kw_list and reader.from_cur() != '~':
+                while reader.has_next() and reader.from_cur() in kw_list and reader.from_cur() not \
+                        in ('(', ')', '~', ';', '-', '[', ']', ','):
                     cur += reader.next()
                 if cur == '<*':
                     add_token(cur, ty_token.BEGIN_COMMENT)

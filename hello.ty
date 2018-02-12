@@ -1,14 +1,2 @@
-func wrapper(fun, x, y) =>
-    func g() =>
-        return fun(x, y)
-    end;
-    return g
-end;
-func add(x, y) =>
-    return x + y
-end;
-func mul(x, y) =>
-    return x * y
-end;
-a := wrapper(add, 1, 11);
-print(a())
+a := array(10, 1);
+d := 3;

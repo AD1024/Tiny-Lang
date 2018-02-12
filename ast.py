@@ -80,6 +80,29 @@ class VarAexp(Aexp):
         return 0
 
 
+class SubscriptExp:
+    def __init__(self, obj, idx):
+        self.obj = obj
+        self.idx = idx
+
+    def __repr__(self):
+        return '{}{}'.format(self.obj, self.idx)
+
+    def eval(self, env, call_frame=None):
+        if call_frame:
+            tar = env[call_frame][self.obj]
+        else:
+            tar = env[self.obj]
+        if isinstance(tar, (Bexp, Aexp, SubscriptExp, Statement)):
+            value = tar.eval(env, call_frame=call_frame)
+        else:
+            value = tar
+        for i in self.idx:
+            index = i.eval(env, call_frame=call_frame)
+            value = value[index]
+        return value
+
+
 class BinopAexp(Aexp):
     __slots__ = ['op', 'left', 'right']
 
@@ -326,8 +349,10 @@ class Func:
         if param_list:
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
                                                                                    or isinstance(x, Aexp)
-                                                                                   or isinstance(x, Bexp) else x,
-                                   param_list))
+                                                                                   or isinstance(x, Bexp)
+                                                                                   or isinstance(x, SubscriptExp)
+                                                                                   else x,
+                                                                                   param_list))
         if self.name in func_list:
             return call_built_in(self.name, param_list)
         for i, j in zip(self.param, param_list):
@@ -335,6 +360,23 @@ class Func:
         ans = self.body.eval(env, call_frame=self.func_id)
         env.pop(self.func_id)
         return ans
+
+
+class Array:
+    def __init__(self, size, init_value):
+        self.size = size
+        if init_value is None:
+            init_value = 0
+        self.data = [init_value] * size
+
+    def __repr__(self):
+        return 'Array of {}'.format(self.data)
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def eval(self, env, call_frame=None):
+        return self.data
 
 
 class FuncCallStmt(Statement):
@@ -380,6 +422,23 @@ class FuncDeclareStmt(Statement):
             env[call_frame][self.name] = Func(self.name, self.param, self.body)
         else:
             env[self.name] = Func(self.name, self.param, self.body)
+
+
+class ArrayInitStmt(Statement):
+    def __init__(self, size, init_value=None):
+        self.size = size
+        self.init_value = init_value
+
+    def __repr__(self):
+        return 'ArrayInit({})'.format(self.size)
+
+    def eval(self, env, call_frame=None):
+        init_size = self.size.eval(env, call_frame=call_frame)
+        if self.init_value:
+            init_value = self.init_value.eval(env, call_frame=call_frame)
+        else:
+            init_value = None
+        return Array(init_size, init_value)
 
 
 class ReturnExpression(Statement):

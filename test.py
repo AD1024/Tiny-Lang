@@ -47,3 +47,5 @@ if __name__ == '__main__':
     ast = ast.value
     env = {}
     ast.eval(env)
+    # for i in env:
+    #     print('{}: {}'.format(i, env[i]))

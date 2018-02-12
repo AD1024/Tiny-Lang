@@ -40,7 +40,7 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return (identifier + keyword(':=') + (aexp() | negate_stmt())) ^ process
+    return (identifier + keyword(':=') + (aexp() | negate_stmt() | array_init_stmt())) ^ process
 
 
 def if_stmt():
@@ -103,7 +103,8 @@ def func_call_stmt():
             param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
         return FuncCallStmt(name, param_list)
 
-    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(')') ^ processor
+    return identifier + keyword('(') + Opt(Rep(Lazy(aexp) | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
+        ')') ^ processor
 
 
 def return_expression_stmt():
@@ -114,9 +115,21 @@ def return_expression_stmt():
     return keyword('return') + (aexp()) ^ processor
 
 
+def array_init_stmt():
+    def processor(parsed):
+        ((((_, _), size), opt_value), _) = parsed
+        if opt_value:
+            _, init_value = opt_value
+        else:
+            init_value = None
+        return ArrayInitStmt(size, init_value)
+
+    return keyword('array') + keyword('(') + Lazy(aexp) + Opt(keyword(',') + Lazy(aexp)) + keyword(')') ^ processor
+
+
 def stmt():
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt() | aexp() | negate_stmt()
+           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt()
 
 
 def stmt_list():
@@ -145,6 +158,18 @@ def precedence_combinator(value_parser, precedence_level, post_processor):
     return ret
 
 
+def subscript_exp():
+    def processor(parsed):
+        (name, subscript) = parsed
+        idx_list = []
+        for i in subscript:
+            ((_, idx), _) = i.value
+            idx_list.append(idx)
+        return SubscriptExp(name, idx_list)
+
+    return (identifier + Rep(keyword('[') + Lazy(aexp) + keyword(']'))) ^ processor
+
+
 def aexp():
     return precedence_combinator(aexp_term(), arithmetic_exp_levels, process_binop)
 
@@ -159,6 +184,7 @@ def aexp_tuple():
 
 def aexp_value():
     return (num ^ (lambda x: NumAexp(x))) | \
+           subscript_exp() | \
            (identifier ^ (lambda x: VarAexp(x))) | \
            (string ^ (lambda x: StrAexp(x))) | \
            (boolean ^ (lambda x: BoolAexp(x)))
