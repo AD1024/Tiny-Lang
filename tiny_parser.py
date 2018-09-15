@@ -41,11 +41,13 @@ def assignment_stmt():
         ((name, _), exp) = result
         return AssigenmentStmt(name, exp)
 
-    return ((subscript_exp() | identifier) + keyword(':=') + (aexp() | negate_stmt() | array_init_stmt())) ^ process
+    return ((subscript_exp() | identifier) + keyword(':=') + (
+            aexp() | negate_stmt() | array_init_stmt() | lambda_decl_expr())) ^ process
 
 
 def if_stmt():
     'Match if-then-else statment'
+
     def processor(parsed):
         (((((_, condition), _), true_stmt), false_parsed), _) = parsed
         if false_parsed:
@@ -61,6 +63,7 @@ def if_stmt():
 
 def while_stmt():
     'Match while-statement'
+
     def processor(parsed):
         ((((_, condition), _), body), _) = parsed
         return WhileStmt(condition, body)
@@ -70,6 +73,7 @@ def while_stmt():
 
 def for_stmt():
     'Match for-statement'
+
     def processor(parsed):
         ((((((((((_, _), init), _), cond), _), post_act), _), _,), body), _) = parsed
         return ForStmt(init, cond, body, post_act)
@@ -82,6 +86,7 @@ def for_stmt():
 
 def negate_stmt():
     'Match negating a number'
+
     def processor(parsed):
         (_, target) = parsed
         return NegateStmt(target)
@@ -91,6 +96,7 @@ def negate_stmt():
 
 def func_declaration_stmt():
     'Match new function binding'
+
     def processor(parsed):
         (((((((_, name), _), param), _), _), body), _) = parsed
         if param:
@@ -102,30 +108,55 @@ def func_declaration_stmt():
            + Lazy(stmt_list) + keyword('end') ^ processor
 
 
+def lambda_decl_expr():
+    def processor(parsed):
+        ((((((_, _), param), _), _), body,), _) = parsed
+        if param:
+            param = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param)))
+        return LambdaDeclareStmt(param, body)
+
+    return keyword('{') + keyword('(') + Opt(Rep(identifier | keyword(','))) + keyword(')') + keyword(
+        '=>') + Lazy(stmt_list) + keyword('}') ^ processor
+
+
 def func_call_stmt():
     'Match function call'
+
     def processor(parsed):
-        (((name, _), param_list), _) = parsed
+        name, param_list = parsed
+        # print(param_list)
         if param_list:
-            param_list = list(map(lambda x: x.value, filter(lambda y: y.value != ',', param_list)))
+            params = []
+            for each in param_list:
+                ((_, p), _) = each.value
+                params.append(p)
+
+            param_list = []
+
+            for each in params:
+                if each:
+                    each = list(map(lambda x: x.value, filter(lambda y: y.value != ',', each)))
+                    param_list.append(each)
         return FuncCallStmt(name, param_list)
 
-    return identifier + keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
-                                               | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
-        ')') ^ processor
+    return identifier + Rep(keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
+                                                   | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
+        ')')) ^ processor
 
 
 def return_expression_stmt():
     'Match returning a result'
+
     def processor(parsed):
         (_, exp) = parsed
         return ReturnExpression(exp)
 
-    return keyword('return') + (aexp()) ^ processor
+    return keyword('return') + (aexp() | Lazy(lambda_decl_expr)) ^ processor
 
 
 def array_init_stmt():
     'Match initializing an array'
+
     def processor(parsed):
         ((((_, _), size), opt_value), _) = parsed
         if opt_value:
@@ -144,12 +175,12 @@ def stmt():
         is called, since aexp() will match subset in subscript_exp()
     '''
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt()
+           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt() | lambda_decl_expr()
 
 
 def stmt_list():
     # Take ; as separator to construct CompoundStatements
-    sep = keyword(';') ^ (lambda x: lambda l, r: CompoundStmt(l, r))
+    sep = keyword('\n') ^ (lambda x: lambda l, r: CompoundStmt(l, r))
     return Exp(stmt(), sep)
 
 
@@ -168,6 +199,7 @@ def get_parser_from_list(lst):
 def precedence_combinator(value_parser, precedence_level, post_processor):
     'Precedence combinator is designed for process arithmetic and bool calculations'
     'whose result can be affected by the priority of operators'
+
     def get_op_parser(p_level):
         return get_parser_from_list(p_level) ^ post_processor
 
@@ -179,6 +211,7 @@ def precedence_combinator(value_parser, precedence_level, post_processor):
 
 def subscript_exp():
     'Indexing expression'
+
     def processor(parsed):
         (name, subscript) = parsed
         idx_list = []

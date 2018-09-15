@@ -164,6 +164,10 @@ class BinopAexp(Aexp):
     def eval(self, env, call_frame=None):
         lv = self.left.eval(env, call_frame=call_frame)
         rv = self.right.eval(env, call_frame=call_frame)
+        try:
+            type(lv)(rv)
+        except Exception:
+            raise Exception('Cannot operate {} with {}'.format(type(lv), type(rv)))
         ret_dict = {
             '+': lambda: lv + rv,
             '-': lambda: lv - rv,
@@ -434,6 +438,13 @@ class Func:
         return ans
 
 
+class Lambda(Func):
+    def __repr__(self):
+        if self.caller_id:
+            return 'LambdaFunction from local {} @ {}'.format(hex(self.caller_id), hex(id(self)))
+        return 'LambdaFunction @ {}'.format(hex(id(self)))
+
+
 class Array(Subscriptable):
     def __init__(self, size, init_value):
         self.size = size
@@ -475,7 +486,19 @@ class FuncCallStmt(Statement):
         return 'Function Call for: {}({})'.format(self.func_name, self.param_list)
 
     def eval(self, env, call_frame=None):
-        func = None
+        # print(call_frame)
+        if not self.param_list:
+            self.param_list = ()
+        if self.param_list:
+            if type(self.param_list[0]) == list and len(self.param_list) == 1:
+                # If it's not a chain call
+                self.param_list = self.param_list[0]
+        elif len(self.param_list) > 1 and type(self.param_list[0]) == list:
+            # chain call
+            result = FuncCallStmt(self.func_name, self.param_list[0]).eval(env, call_frame)
+            for ps in self.param_list[1:]:
+                result = FuncCallStmt(result.name, ps).eval(env, result.caller_id)
+            return result
         if call_frame:
             # func = env[call_frame].get(self.func_name)
             'Find the function according to the context'
@@ -486,17 +509,17 @@ class FuncCallStmt(Statement):
             func = env.get(self.func_name)
         if self.func_name not in func_list and (not func or not isinstance(func, Func)):
             import sys
-            sys.stderr.write('function {} is not declared'.format(self.func_name))
+            sys.stderr.write('callable object {} is not declared'.format(self.func_name))
             exit(-1)
         else:
             if call_frame is not None and func is not None and self.func_name == func.name:
                 # If the func call is recursive, create a new function to create a new context
                 func = Func(self.func_name, func.param, func.body, caller=call_frame)
-            if not self.param_list:
-                self.param_list = ()
             if self.func_name in func_list:
                 # built-in functions
                 func = Func(self.func_name, None, None)
+            elif len(func.param) != len(self.param_list):
+                    raise Exception('Invalid func call @ {}'.format(func.name))
             return func.eval(env, self.param_list, call_frame=call_frame)
 
 
@@ -515,6 +538,24 @@ class FuncDeclareStmt(Statement):
             env[call_frame][self.name].caller_id = call_frame  # For closure
         else:
             env[self.name] = Func(self.name, self.param, self.body)
+
+
+class LambdaDeclareStmt(Statement):
+    def __init__(self, param, body):
+        self.param = tuple(param) if param else ()
+        self.body = body
+
+    def __repr__(self):
+        return 'Lambda-Decl: {}'.format(self.param)
+
+    def eval(self, env, call_frame=None):
+        if call_frame:
+            env[call_frame][str(id(self))] = Lambda(str(id(self)), self.param, self.body)
+            env[call_frame][str(id(self))].caller_id = call_frame
+            return env[call_frame][str(id(self))]
+        else:
+            env[str(id(self))] = Lambda(str(id(self)), self.param, self.body)
+            return env[str(id(self))]
 
 
 class ArrayInitStmt(Statement):

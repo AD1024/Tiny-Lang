@@ -17,6 +17,7 @@ def call_built_in(func_name, param):
         if func_name == 'print':
             for i in param:
                 print(i, end=' ')
+            print()
             return None
         elif func_name == 'len':
             return param[0].size

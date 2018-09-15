@@ -1,35 +1,24 @@
-<*func f(x) =>
-    func g() =>
-        return x + 1
-    end;
-    return g
-end;
-a := f(2);
-print(a()) *>
-N := int(scan());
-a := array(N);
-
+N := int(scan())
+a := array(N + 10)
 func lowbit(x) =>
     return x & (~x)
-end;
-
+end
 func update(x, v) =>
     while x < N do
-        a[x] := a[x] + v;
+        a[x] := a[x] + v
         x := x + lowbit(x)
     end
-end;
-
-op := int(scan());
+end
+op := int(scan())
 for(i:=0;i<op;i:=i+1) do
-    p := int(scan());
-    q := int(scan());
+    p := int(scan())
+    q := int(scan())
     update(p, q)
-end;
-ans := 0;
-p := int(scan());
+end
+ans := 0
+p := int(scan())
 while p > 0 do
-    ans := ans + a[p];
+    ans := ans + a[p]
     p := p - lowbit(p)
-end;
+end
 print(ans)

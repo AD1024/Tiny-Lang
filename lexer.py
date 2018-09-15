@@ -82,10 +82,10 @@ kw_list = [
     'while', 'do',
     'for', 'if', 'then', 'else', 'end', 'not',
     '<*', '*>', '>', '<', '>=', '<=', '=', ':=', '!=', 'andalso', 'orelse',
-    'True', 'False', ';', '(', ')', '[', ']',
+    'True', 'False', ';', '(', ')', '[', ']', '{', '}',
 ]
 # escape symbols
-escape = ['\n', '\r', '\t', '\a', ' ', '\f']
+escape = ['\r', '\t', '\a', ' ', '\f']
 
 
 class Reader:
@@ -98,6 +98,8 @@ class Reader:
         self.size = len(data)
         self.rng = range(0, self.size)
         self.cursor = 0
+        self.line_number = 1
+        self.line_pos = 0
 
     def update(self, data):
         '''
@@ -126,6 +128,10 @@ class Reader:
         '''
         ans = self.data[self.cursor]
         self.cursor += 1
+        self.line_pos += 1
+        if ans == '\n':
+            self.line_number += 1
+            self.line_pos = 0
         return ans
 
     def prev(self):
@@ -151,6 +157,8 @@ def advanced_parse(input_code):
     :return: token list
     '''
     token_list = []
+    if input_code[-1] == '\n':
+        input_code = input_code[:-1]
     reader = Reader(input_code)
 
     class Count:
@@ -171,11 +179,15 @@ def advanced_parse(input_code):
         ans = ''
         while reader.has_next() and reader.from_cur().isdigit():
             ans += reader.next()
-        if reader.has_next() and reader.from_cur() == '.':
+        if reader.has_next() and reader.from_cur() in ('.', 'e'):
             'Process decimal numbers'
             ans += reader.next()
-            while reader.has_next() and reader.from_cur().isdigit():
+            while reader.has_next() and (reader.from_cur().isdigit() or reader.from_cur() == '-'):
+                if '-' in ans and reader.from_cur() == '-':
+                    raise Exception('Invalid float @ line {}, {}'.format(reader.line_number, reader.line_pos))
                 ans += reader.next()
+            if not ans[-1].isdigit():
+                raise Exception('Invalid float @ line {}, {}'.format(reader.line_number, reader.line_pos))
         return ans
 
     def read_word():
@@ -187,11 +199,16 @@ def advanced_parse(input_code):
 
     while reader.has_next():
         cur = reader.next()
+        if cur == '\n':
+            if token_list and token_list[-1][0] in ('func', '=>', '{', '(', 'do', 'then', 'else', '\n'):
+                continue
+            add_token('\n', ty_token.RESERVED)
+            continue
         if cur in escape:
             continue
         if cur.isdigit():
             cur += read_number()
-            add_token(cur, ty_token.DOUBLE if '.' in cur else ty_token.INT)
+            add_token(cur, ty_token.DOUBLE if '.' in cur or 'e' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
             if cur in ('(', ')', '~', ';', '-', '[', ']', ','):
                 'These are single-symbol reserved words. There cannot be any symbol related'
@@ -219,4 +236,8 @@ def advanced_parse(input_code):
             else:
                 '`cur` is an identifier'
                 add_token(cur, ty_token.IDENTIFIER)
+        if token_list and token_list[-1][0] == 'end' and token_list[-2][0] == '\n':
+            token_list.pop(-2)
+    # for i in token_list:
+    #     print(i)
     return token_list
