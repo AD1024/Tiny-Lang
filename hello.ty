@@ -1,2 +1,0 @@
-a := {(x) => return {()=> return {() => x * 3}}}(3)()()
-print(a)

@@ -4,11 +4,15 @@ from built_in_functions import call_built_in, func_list
 def find_variable(env, call_frame, name):
     'When `call_frame` is not None, which means the context of current env is in'
     'a function or several layers of function call. This method is designed for'
-    'finding variables in parent context, which is stored in the index -1'
+    'finding variables in parent context, whose key is stored in the index -1'
     t_tree = env.copy()
+    if call_frame is not None and 'global_ref' in env[call_frame] and name in env[call_frame]['global_ref']:
+        return env[name]
     while name not in t_tree[call_frame] and -1 in t_tree[call_frame]:
-        t_tree[call_frame] = t_tree[call_frame][-1]
-    return t_tree[call_frame].get(name)
+        if t_tree[call_frame][-1] == -1:
+            return t_tree.get(name, None)
+        t_tree[call_frame] = t_tree[t_tree[call_frame][-1]]
+    return t_tree[call_frame].get(name, None)
 
 
 class Equality:
@@ -106,11 +110,13 @@ class VarAexp(Aexp):
         if not call_frame:
             if self.name in env:
                 return env[self.name]
+            else:
+                raise Exception('Variable {} not declared'.format(self.name))
         else:
-            return find_variable(env, call_frame, self.name)
-            # if self.name in env[call_frame]:
-            #     return env[call_frame][self.name]
-        return 0
+            ret = find_variable(env, call_frame, self.name)
+            if ret is None:
+                raise Exception('Variable {} not declared'.format(self.name))
+            return ret
 
 
 class SubscriptExp:
@@ -281,9 +287,10 @@ class NotBexp(Bexp):
 
 
 class AssigenmentStmt(Statement):
-    def __init__(self, name, aexp):
+    def __init__(self, name, aexp, global_assign=False):
         self.name = name
         self.aexp = aexp
+        self.global_assign = global_assign
 
     def __repr__(self):
         return 'AssignStatement({}, {})'.format(self.name, self.aexp)
@@ -307,9 +314,28 @@ class AssigenmentStmt(Statement):
 
             modify(obj, idx)
         elif call_frame:
-            env[call_frame][self.name] = value
+            if 'global_ref' in env[call_frame] and self.name in env[call_frame]['global_ref']:
+                env[self.name] = value
+            else:
+                env[call_frame][self.name] = value
         else:
             env[self.name] = value
+
+
+class GlobalStmt(Statement):
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return 'Global Copying for {}'.format(self.name)
+
+    def eval(self, env, call_frame=None):
+        if self.name not in env:
+            raise Exception('{} is not declared in global scope'.format(self.name))
+        if call_frame is not None:
+            if 'global_ref' not in env[call_frame]:
+                env[call_frame]['global_ref'] = []
+            env[call_frame]['global_ref'].append(self.name)
 
 
 class CompoundStmt(Statement):
@@ -359,7 +385,9 @@ class WhileStmt(Statement):
         cond_value = self.cond.eval(env, call_frame=call_frame)
         while cond_value:
             res = self.body.eval(env, call_frame=call_frame)
-            if res:
+            if isinstance(res, BreakStmt):
+                break
+            if res is not None:
                 return res
             cond_value = self.cond.eval(env, call_frame=call_frame)
 
@@ -381,7 +409,9 @@ class ForStmt(Statement):
         cond_value = self.cond.eval(env, call_frame=call_frame)
         while cond_value:
             res = self.body.eval(env, call_frame=call_frame)
-            if res:
+            if isinstance(res, BreakStmt):
+                break
+            if res is not None:
                 return res
             if self.post:
                 self.post.eval(env, call_frame=call_frame)
@@ -417,10 +447,12 @@ class Func:
         env[self.func_id][self.name] = self  # put itself into the context to prepare for recursive call
         if not call_frame:
             # Put the static environment into its parent context
-            env[self.func_id].update({-1: dict(filter(lambda x: x[0] != self.func_id, env.items()))})
+            # env[self.func_id].update({-1: dict(filter(lambda x: x[0] != self.func_id, env.items()))})
+            env[self.func_id].update({-1: -1})
         if self.caller_id and self.caller_id in env:
             # If it is called by its parent method, update the parent context
-            env[self.func_id].update({-1: env[self.caller_id]})
+            # env[self.func_id].update({-1: env[self.caller_id]})
+            env[self.func_id].update({-1: self.caller_id})
         if param_list:
             # Process parameters
             param_list = tuple(map(lambda x: x.eval(env, call_frame=call_frame) if isinstance(x, Statement)
@@ -523,7 +555,7 @@ class FuncCallStmt(Statement):
                 # built-in functions
                 func = Func(self.func_name, None, None)
             elif len(func.param) != len(self.param_list):
-                    raise Exception('Invalid func call @ {}'.format(func.name))
+                raise Exception('Invalid func call @ {}'.format(func.name))
             return func.eval(env, self.param_list, call_frame=call_frame)
 
 
@@ -588,3 +620,14 @@ class ReturnExpression(Statement):
 
     def eval(self, env, call_frame=None):
         return self.exp.eval(env, call_frame=call_frame)
+
+
+class BreakStmt(Statement):
+    def __init__(self):
+        self.op = -1
+
+    def __repr__(self):
+        return 'BreakStatment'
+
+    def eval(self, env, call_frame=None):
+        return self

@@ -82,7 +82,7 @@ kw_list = [
     'while', 'do',
     'for', 'if', 'then', 'else', 'end', 'not',
     '<*', '*>', '>', '<', '>=', '<=', '=', ':=', '!=', 'andalso', 'orelse',
-    'True', 'False', ';', '(', ')', '[', ']', '{', '}',
+    'True', 'False', ';', '(', ')', '[', ']', '{', '}', 'break', 'global',
 ]
 # escape symbols
 escape = ['\r', '\t', '\a', ' ', '\f']
@@ -173,7 +173,8 @@ def advanced_parse(input_code):
     cnt = Count()
 
     def add_token(data, tag):
-        token_list.append((data, tag, cnt.next()))
+        if not comment_flag:
+            token_list.append((data, tag, cnt.next()))
 
     def read_number():
         ans = ''
@@ -197,6 +198,14 @@ def advanced_parse(input_code):
             ans += reader.next()
         return ans
 
+    def read_str(qt):
+        ans = ''
+        while reader.has_next() and reader.from_cur() != qt:
+            ans += reader.next()
+        return ans
+
+    comment_flag = 0
+
     while reader.has_next():
         cur = reader.next()
         if cur == '\n':
@@ -210,7 +219,7 @@ def advanced_parse(input_code):
             cur += read_number()
             add_token(cur, ty_token.DOUBLE if '.' in cur or 'e' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
-            if cur in ('(', ')', '~', ';', '-', '[', ']', ',', '{', '}'):
+            if cur in ('(', ')', '~', ';', '-', '[', ']', ',', '{', '}', '_'):
                 'These are single-symbol reserved words. There cannot be any symbol related'
                 'to these symbols after them'
                 add_token(cur, ty_token.RESERVED)
@@ -220,12 +229,16 @@ def advanced_parse(input_code):
                     'Process reserved words like `>=`, `<=`, which consist of two one-symbol reserved word'
                     cur += reader.next()
                 if cur == '<*':
-                    add_token(cur, ty_token.BEGIN_COMMENT)
+                    # add_token(cur, ty_token.BEGIN_COMMENT)
+                    comment_flag += 1
                 elif cur == '*>':
-                    add_token(cur, ty_token.END_COMMENT)
+                    # add_token(cur, ty_token.END_COMMENT)
+                    comment_flag -= 1
                 else:
                     add_token(cur, ty_token.RESERVED)
-        elif cur.isalpha():
+        elif cur == "'" or cur == '"':
+            add_token(read_str(), ty_token.STRING)
+        elif cur.isalpha() or cur == '_':
             cur += read_word()
             if cur in kw_list:
                 '`cur` is a reserved word e.g. `for`'
@@ -238,6 +251,10 @@ def advanced_parse(input_code):
                 add_token(cur, ty_token.IDENTIFIER)
         if token_list and token_list[-1][0] in ('end', 'else') and token_list[-2][0] == '\n':
             token_list.pop(-2)
-    # for i in token_list:
-    #     print(i)
+    while token_list and token_list[-1][0] == '\n':
+        token_list.pop()
+    while token_list and token_list[0][0] == '\n':
+        token_list.pop(0)
+    for i in token_list:
+        print(i)
     return token_list

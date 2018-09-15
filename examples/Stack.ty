@@ -1,0 +1,71 @@
+stk := array(100)
+lson := {(x) => return x shl 1}
+rson := {(x) => return (x shl 1) | 1}
+fa := {(x) => return x shr 1}
+size := 0
+
+func push_up(x) =>
+    while fa(x) >= 1 do
+        if stk[x] < stk[fa(x)] then
+            t := stk[x]
+            stk[x] := stk[fa(x)]
+            stk[fa(x)] := t
+            x := fa(x)
+        else
+            break
+        end
+    end
+end
+
+func push_down(x) =>
+    while lson(x) <= size do
+        l := lson(x)
+        r := rson(x)
+        now := x
+        if stk[now] > stk[l] then
+            now := l
+        end
+        if r <= size andalso stk[now] > stk[r] then
+            now := r
+        end
+        if now != x then
+            t := stk[now]
+            stk[now] := stk[x]
+            stk[x] := t
+            x := now
+        else
+            break
+        end
+    end
+end
+
+func insert(x) =>
+    global size
+    size := size + 1
+    stk[size] := x
+    push_up(size)
+end
+
+func top() =>
+    return stk[1]
+end
+
+func pop() =>
+    global size
+    if size > 0 then
+        stk[1] := stk[size]
+        size := size - 1
+        push_down(1)
+    end
+end
+N := int(scan())
+while N > 0 do
+    a := int(scan())
+    N := N - 1
+    insert(a)
+end
+
+while size >= 1 do
+    print(top())
+    pop()
+end

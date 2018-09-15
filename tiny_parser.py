@@ -94,6 +94,14 @@ def negate_stmt():
     return keyword('~') + Lazy(aexp) ^ processor
 
 
+def global_stmt():
+    def processor(parsed):
+        _, name = parsed
+        return GlobalStmt(name)
+
+    return (keyword('global') + identifier) ^ processor
+
+
 def func_declaration_stmt():
     'Match new function binding'
 
@@ -141,7 +149,8 @@ def func_call_stmt():
         return FuncCallStmt(name, param_list)
 
     return (identifier | lambda_decl_expr()) + Rep(keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
-                                                   | Lazy(negate_stmt) | Lazy(bexp) | Lazy(lambda_decl_expr) | keyword(','))) + keyword(
+                                                                          | Lazy(negate_stmt) | Lazy(bexp) | Lazy(
+        lambda_decl_expr) | keyword(','))) + keyword(
         ')')) ^ processor
 
 
@@ -153,6 +162,13 @@ def return_expression_stmt():
         return ReturnExpression(exp)
 
     return keyword('return') + (aexp() | Lazy(lambda_decl_expr)) ^ processor
+
+
+def break_stmt():
+    def processor(parsed):
+        return BreakStmt()
+
+    return keyword('break') ^ processor
 
 
 def array_init_stmt():
@@ -176,7 +192,8 @@ def stmt():
         is called, since aexp() will match subset in subscript_exp()
     '''
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt() | lambda_decl_expr()
+           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt() | lambda_decl_expr() | break_stmt() \
+           | global_stmt()
 
 
 def stmt_list():
