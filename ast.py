@@ -8,11 +8,14 @@ def find_variable(env, call_frame, name):
     t_tree = env.copy()
     if call_frame is not None and 'global_ref' in env[call_frame] and name in env[call_frame]['global_ref']:
         return env[name]
-    while name not in t_tree[call_frame] and -1 in t_tree[call_frame]:
-        if t_tree[call_frame][-1] == -1:
-            return t_tree.get(name, None)
-        t_tree[call_frame] = t_tree[t_tree[call_frame][-1]]
-    return t_tree[call_frame].get(name, None)
+    if call_frame:
+        while name not in t_tree[call_frame] and -1 in t_tree[call_frame]:
+            if t_tree[call_frame][-1] == -1:
+                return t_tree.get(name, None)
+            call_frame = t_tree[call_frame][-1]
+        return t_tree[call_frame].get(name, None)
+    else:
+        return t_tree.get(name, None)
 
 
 class Equality:
@@ -466,7 +469,8 @@ class Func:
         for i, j in zip(self.param, param_list):
             env[self.func_id][i] = j
         ans = self.body.eval(env, call_frame=self.func_id)
-        # env.pop(self.func_id)
+        # env[self.func_id].clear()
+        # print(env.get(self.func_id))
         return ans
 
 
@@ -551,6 +555,8 @@ class FuncCallStmt(Statement):
             if call_frame is not None and func is not None and self.func_name == func.name:
                 # If the func call is recursive, create a new function to create a new context
                 func = Func(self.func_name, func.param, func.body, caller=call_frame)
+            if call_frame is None and func is not None:
+                func = Func(self.func_name, func.param, func.body, caller=None)
             if self.func_name in func_list:
                 # built-in functions
                 func = Func(self.func_name, None, None)

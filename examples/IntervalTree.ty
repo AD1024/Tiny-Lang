@@ -17,6 +17,8 @@ func maintain(x) =>
 end
 
 func build(x, l, r) =>
+    global L
+    global R
     L[x] := l
     R[x] := r
     if l = r then
@@ -30,10 +32,13 @@ func build(x, l, r) =>
 end
 
 func query(x, l, r) =>
+    global L
+    global R
     if L[x] = l andalso R[x] = r then
         return Max[x]
     else
         mid := (L[x] + R[x]) shr 1
+        print(x)
         if l > mid then
             return query(rson(x), l, r)
         else
