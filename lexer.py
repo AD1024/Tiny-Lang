@@ -157,6 +157,8 @@ def advanced_parse(input_code):
     :return: token list
     '''
     token_list = []
+    if not input_code:
+        return []
     if input_code[-1] == '\n':
         input_code = input_code[:-1]
     reader = Reader(input_code)
@@ -202,6 +204,8 @@ def advanced_parse(input_code):
         ans = ''
         while reader.has_next() and reader.from_cur() != qt:
             ans += reader.next()
+        if reader.from_cur() == qt:
+            reader.next()
         return ans
 
     comment_flag = 0
@@ -237,7 +241,7 @@ def advanced_parse(input_code):
                 else:
                     add_token(cur, ty_token.RESERVED)
         elif cur == "'" or cur == '"':
-            add_token(read_str(), ty_token.STRING)
+            add_token(read_str(cur), ty_token.STRING)
         elif cur.isalpha() or cur == '_':
             cur += read_word()
             if cur in kw_list:
@@ -255,6 +259,6 @@ def advanced_parse(input_code):
         token_list.pop()
     while token_list and token_list[0][0] == '\n':
         token_list.pop(0)
-    for i in token_list:
-        print(i)
+    # for i in token_list:
+    #     print(i)
     return token_list
