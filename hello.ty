@@ -1,11 +1,2 @@
-func wrapper(fun, x, y) =>
-    return fun(x, y)
-end
-func add(x, y) =>
-    return x + y
-end
-func mul(x, y) =>
-    return x * y
-end
-print(wrapper(add, 1, 10))
-print(wrapper(mul, 2, 8))
+a := {(x) => return {()=> return {() => x * 3}}}(3)()()
+print(a)

@@ -489,6 +489,8 @@ class FuncCallStmt(Statement):
         # print(call_frame)
         if not self.param_list:
             self.param_list = ()
+        if isinstance(self.func_name, LambdaDeclareStmt):
+            self.func_name = self.func_name.eval(env, call_frame).name
         if self.param_list:
             if type(self.param_list[0]) == list and len(self.param_list) == 1:
                 # If it's not a chain call

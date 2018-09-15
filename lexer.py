@@ -210,7 +210,7 @@ def advanced_parse(input_code):
             cur += read_number()
             add_token(cur, ty_token.DOUBLE if '.' in cur or 'e' in cur else ty_token.INT)
         elif cur in kw_list or cur == '!' or cur == ':':
-            if cur in ('(', ')', '~', ';', '-', '[', ']', ','):
+            if cur in ('(', ')', '~', ';', '-', '[', ']', ',', '{', '}'):
                 'These are single-symbol reserved words. There cannot be any symbol related'
                 'to these symbols after them'
                 add_token(cur, ty_token.RESERVED)

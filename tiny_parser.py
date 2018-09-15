@@ -140,7 +140,7 @@ def func_call_stmt():
                     param_list.append(None)
         return FuncCallStmt(name, param_list)
 
-    return identifier + Rep(keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
+    return (identifier | lambda_decl_expr()) + Rep(keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
                                                    | Lazy(negate_stmt) | Lazy(bexp) | Lazy(lambda_decl_expr) | keyword(','))) + keyword(
         ')')) ^ processor
 
