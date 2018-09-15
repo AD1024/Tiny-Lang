@@ -1,0 +1,55 @@
+lson := {(x) => return x shl 1}
+rson := {(x) => return (x shl 1) | 1}
+L := array(10100)
+R := array(10100)
+Max := array(10100)
+
+func max(x, y) =>
+    if x > y then
+        return x
+    else
+        return y
+    end
+end
+
+func maintain(x) =>
+    Max[x] := max(Max[lson(x)], Max[rson(x)])
+end
+
+func build(x, l, r) =>
+    L[x] := l
+    R[x] := r
+    if l = r then
+        Max[x] := int(scan())
+    else
+        mid := (l + r) shr 1
+        build(lson(x), l, mid)
+        build(rson(x), mid + 1, r)
+        maintain(x)
+    end
+end
+
+func query(x, l, r) =>
+    if L[x] = l andalso R[x] = r then
+        return Max[x]
+    else
+        mid := (L[x] + R[x]) shr 1
+        if l > mid then
+            return query(rson(x), l, r)
+        else
+            if r <= mid then
+                return query(lson(x), l, r)
+            else
+                return max(query(lson(x), l, mid), query(rson(x), mid + 1, r))
+            end
+        end
+    end
+end
+
+n := int(scan())
+build(1, 1, n)
+for(i:=0;i<5;i:=i+1) do
+    a := int(scan())
+    b := int(scan())
+    print(query(1, a, b))
+end

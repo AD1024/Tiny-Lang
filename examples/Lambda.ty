@@ -1,0 +1,5 @@
+func apply(function, lv, rv) =>
+    return {() => return function(lv, rv)} <* Closure *>
+end
+f := {(x, y) => return x * y }
+print(apply({(x, y) => return {() => x * y} }, 3, 4)()())

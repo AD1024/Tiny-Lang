@@ -1,0 +1,8 @@
+func Fib(x) =>
+    if x = 1 orelse x = 2 then
+        return 1
+    else
+        return Fib(x - 1) + Fib(x - 2)
+    end
+end
+print(Fib(20))
