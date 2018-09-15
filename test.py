@@ -8,7 +8,6 @@ if __name__ == '__main__':
     input_code = f.read()
     f.close()
     token_list = lexer.advanced_parse(input_code)
-    # print(token_list)
     # Process comment blocks
     stk = []
     comment_seg = []

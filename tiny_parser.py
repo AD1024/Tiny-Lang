@@ -124,7 +124,6 @@ def func_call_stmt():
 
     def processor(parsed):
         name, param_list = parsed
-        # print(param_list)
         if param_list:
             params = []
             for each in param_list:
@@ -137,10 +136,12 @@ def func_call_stmt():
                 if each:
                     each = list(map(lambda x: x.value, filter(lambda y: y.value != ',', each)))
                     param_list.append(each)
+                else:
+                    param_list.append(None)
         return FuncCallStmt(name, param_list)
 
     return identifier + Rep(keyword('(') + Opt(Rep(Lazy(array_init_stmt) | Lazy(aexp)
-                                                   | Lazy(negate_stmt) | Lazy(bexp) | keyword(','))) + keyword(
+                                                   | Lazy(negate_stmt) | Lazy(bexp) | Lazy(lambda_decl_expr) | keyword(','))) + keyword(
         ')')) ^ processor
 
 

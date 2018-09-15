@@ -493,12 +493,14 @@ class FuncCallStmt(Statement):
             if type(self.param_list[0]) == list and len(self.param_list) == 1:
                 # If it's not a chain call
                 self.param_list = self.param_list[0]
-        elif len(self.param_list) > 1 and type(self.param_list[0]) == list:
-            # chain call
-            result = FuncCallStmt(self.func_name, self.param_list[0]).eval(env, call_frame)
-            for ps in self.param_list[1:]:
-                result = FuncCallStmt(result.name, ps).eval(env, result.caller_id)
-            return result
+            if len(self.param_list) > 1 and type(self.param_list[0]) == list:
+                # chain call
+                result = FuncCallStmt(self.func_name, self.param_list[0]).eval(env, call_frame)
+                for ps in self.param_list[1:]:
+                    result = FuncCallStmt(result.name, ps).eval(env, result.caller_id)
+                return result
+            elif self.param_list[0] is None:
+                self.param_list = ()
         if call_frame:
             # func = env[call_frame].get(self.func_name)
             'Find the function according to the context'

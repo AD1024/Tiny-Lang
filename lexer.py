@@ -236,7 +236,7 @@ def advanced_parse(input_code):
             else:
                 '`cur` is an identifier'
                 add_token(cur, ty_token.IDENTIFIER)
-        if token_list and token_list[-1][0] == 'end' and token_list[-2][0] == '\n':
+        if token_list and token_list[-1][0] in ('end', 'else') and token_list[-2][0] == '\n':
             token_list.pop(-2)
     # for i in token_list:
     #     print(i)
