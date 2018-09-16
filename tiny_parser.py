@@ -91,7 +91,7 @@ def negate_stmt():
         (_, target) = parsed
         return NegateStmt(target)
 
-    return keyword('~') + Lazy(aexp) ^ processor
+    return keyword('~') + Lazy(aexp_term) ^ processor
 
 
 def global_stmt():
@@ -192,7 +192,7 @@ def stmt():
         is called, since aexp() will match subset in subscript_exp()
     '''
     return assignment_stmt() | func_call_stmt() | func_declaration_stmt() | if_stmt() | while_stmt() | for_stmt() | \
-           return_expression_stmt() | subscript_exp() | aexp() | negate_stmt() | lambda_decl_expr() | break_stmt() \
+           return_expression_stmt() | subscript_exp() | negate_stmt() | aexp() | lambda_decl_expr() | break_stmt() \
            | global_stmt()
 
 
