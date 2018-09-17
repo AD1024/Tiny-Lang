@@ -7,8 +7,8 @@ arithmetic_exp_levels = [
     ['%', ],
     ['*', '/', 'div'],
     ['+', '-'],
-    ['|', '&', '^'],
     ['shl', 'shr'],
+    ['|', '&', '^'],
 ]
 
 bool_exp_levels = [

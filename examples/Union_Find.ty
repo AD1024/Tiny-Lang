@@ -1,0 +1,50 @@
+fa := array(20)
+
+func find(x) =>
+    global fa
+    print(x, fa[x])
+    if fa[x] = x then
+        return x
+    else
+        fa[x] := find(fa[x])
+        return fa[x]
+    end
+end
+
+func same_set(x, y) =>
+    return find(x) = find(y)
+end
+
+func union(x, y) =>
+    global fa
+    fx := find(x)
+    fy := find(y)
+    fa[fx] := fy
+end
+
+func main() =>
+    N := int(scan())
+    global fa
+    for(i := 1;i<=N;i := i + 1) do
+        fa[i] := i
+    end
+    M := int(scan())
+    while M > 0 do
+        op := int(scan())
+        l := int(scan())
+        r := int(scan())
+        M := M - 1
+        if op = 1 then
+            union(l, r)
+            print(fa)
+        else
+            if op = 2 then
+                if same_set(l, r) = True then
+                    print('Yes')
+                else
+                    print('No')
+                end
+            end
+        end
+    end
+end

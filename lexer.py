@@ -195,7 +195,8 @@ def advanced_parse(input_code):
 
     def read_word():
         ans = ''
-        while reader.has_next() and reader.from_cur().isalpha() or reader.from_cur() in ('_', ):
+        while reader.has_next() and (reader.from_cur().isalpha() or reader.from_cur().isdigit()
+                                     or reader.from_cur() in ('_', )):
             'read a word'
             ans += reader.next()
         return ans

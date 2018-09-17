@@ -522,7 +522,7 @@ class FuncCallStmt(Statement):
         return 'Function Call for: {}({})'.format(self.func_name, self.param_list)
 
     def eval(self, env, call_frame=None):
-        # print(call_frame)
+        self.param_list = list(map(lambda x: [] if x is None else x, self.param_list))
         if not self.param_list:
             self.param_list = ()
         if isinstance(self.func_name, LambdaDeclareStmt):

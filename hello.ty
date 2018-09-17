@@ -1,0 +1,2 @@
+a := {() => return {() => return 1}}()()
+print(a)
